@@ -22,7 +22,7 @@ _settings = _load_settings()
 # Browser settings
 AB_BIN = os.path.expandvars(_settings['browser']['ab_bin'])
 if not os.environ.get('CDN_SKIP_AB_CHECK') and not Path(AB_BIN).exists() and not shutil.which(AB_BIN):
-    raise FileNotFoundError(f'agent-browser binary not found: {AB_BIN}')
+    raise FileNotFoundError(f'agent-browser binary not found: {AB_BIN}')  # pragma: no cover
 SESSION = _settings['browser']['session']
 STATE_FILE = str(_PROJECT_ROOT / _settings['browser']['state_file'])
 AKAMAI_URL = _settings['akamai_url']
