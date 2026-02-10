@@ -36,11 +36,33 @@ Any code change that affects report logic, config loading, browser automation, o
 ### 1. Unit Tests (必跑)
 
 ```bash
-uv run pytest tests/ -v
+uv run pytest tests/ -v -m "not integration"
 uv run ruff check scripts/ tests/
 ```
 
-### 2. E2E Test (重大改動後必跑)
+### 2. Integration Tests (改動 selector/擷取邏輯後必跑)
+
+使用本地 mock 站台 + agent-browser 驗證 DOM selector 與 JS 擷取邏輯：
+
+```bash
+uv run pytest tests/test_mock_integration.py -v
+```
+
+Mock 站台位於 `tests/mock_site/`，精確複製 Akamai SPA 的 DOM 結構。測試透過 `window.__mockState` 追蹤互動狀態。
+
+### 3. Contract Check (定期執行)
+
+連線真實 Akamai 驗證 DOM selector 是否存在：
+
+```bash
+uv run python -m scripts.contract_check --headed            # 執行檢查
+uv run python -m scripts.contract_check --headed --save     # 存 baseline
+uv run python -m scripts.contract_check --headed --diff     # 比對 baseline
+```
+
+Baseline 存於 `tests/golden/contract_baseline.json`。
+
+### 4. E2E Test (重大改動後必跑)
 
 重大改動包括：修改 `config.py`、`akamai_report.py`、`cpcode_select.py`、`calendar_nav.py`、`data_extract.py`、`browser_helpers.py`、`cloudfront.py`，或 `config/settings.yaml`。
 
