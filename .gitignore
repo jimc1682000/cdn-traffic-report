@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+.pytest_cache/
+output/
+profiles/
+.claude/
+*.log
+.ruff_cache/
+config/
+!config/*.template
+tests/golden/report_*.json

@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# Commit message hook for conventional commit validation
+# https://www.conventionalcommits.org/
+#
+# Format: <type>(<scope>): <subject>
+#
+# Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+#
+
+set -e
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Conventional commit pattern
+# type(scope): subject
+# type: subject (scope is optional)
+PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_-]+\))?: .{1,100}$"
+
+# Allow merge commits
+MERGE_PATTERN="^Merge "
+
+# Allow revert commits
+REVERT_PATTERN="^Revert "
+
+# Check if it's a merge or revert commit
+if [[ "$COMMIT_MSG" =~ $MERGE_PATTERN ]] || [[ "$COMMIT_MSG" =~ $REVERT_PATTERN ]]; then
+    exit 0
+fi
+
+# Get the first line (subject)
+FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
+
+# Validate against conventional commit pattern
+if ! [[ "$FIRST_LINE" =~ $PATTERN ]]; then
+    echo ""
+    echo -e "${RED}❌ Invalid commit message format!${NC}"
+    echo ""
+    echo -e "${YELLOW}Your commit message:${NC}"
+    echo "  $FIRST_LINE"
+    echo ""
+    echo -e "${YELLOW}Expected format:${NC}"
+    echo "  <type>(<scope>): <subject>"
+    echo ""
+    echo -e "${YELLOW}Valid types:${NC}"
+    echo "  feat     - A new feature"
+    echo "  fix      - A bug fix"
+    echo "  docs     - Documentation changes"
+    echo "  style    - Code style changes (formatting, etc)"
+    echo "  refactor - Code refactoring"
+    echo "  perf     - Performance improvements"
+    echo "  test     - Adding or updating tests"
+    echo "  build    - Build system or dependencies"
+    echo "  ci       - CI configuration changes"
+    echo "  chore    - Other changes (maintenance)"
+    echo "  revert   - Reverting a previous commit"
+    echo ""
+    echo -e "${YELLOW}Examples:${NC}"
+    echo "  feat(report): add geography data extraction"
+    echo "  fix(calendar): correct date range navigation"
+    echo "  docs: update README with usage examples"
+    echo "  test(cloudfront): add aggregation tests"
+    echo "  chore: update dependencies"
+    echo ""
+    echo -e "${YELLOW}Rules:${NC}"
+    echo "  - Subject must be 1-100 characters"
+    echo "  - Use imperative mood (add, not added)"
+    echo "  - Don't end with a period"
+    echo "  - Scope is optional but recommended"
+    echo ""
+    exit 1
+fi
+
+# Additional checks
+SUBJECT=$(echo "$FIRST_LINE" | sed 's/^[^:]*: //')
+
+# Check if subject starts with lowercase
+if [[ "$SUBJECT" =~ ^[A-Z] ]]; then
+    echo -e "${YELLOW}⚠️  Hint: Subject should start with lowercase${NC}"
+    echo "  Current: $SUBJECT"
+    # This is just a warning, not an error
+fi
+
+# Check if subject ends with period
+if [[ "$SUBJECT" =~ \.$ ]]; then
+    echo -e "${RED}❌ Subject should not end with a period${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Commit message format OK${NC}"
+exit 0
