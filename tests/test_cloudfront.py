@@ -156,3 +156,28 @@ def test_fetch_cloudfront_bytes_timeout(mocker):
 
     with pytest.raises(subprocess.TimeoutExpired):
         fetch_cloudfront_bytes('DIST123', '2026-01-25', '2026-01-31')
+
+
+def test_fetch_cloudfront_bytes_success(mocker):
+    """Normal path should parse AWS CLI JSON output and return daily totals."""
+    import json
+
+    mock_output = json.dumps({
+        'MetricDataResults': [{
+            'Id': 'cf_bytes',
+            'Timestamps': [
+                '2026-01-25T16:00:00+00:00',
+                '2026-01-25T17:00:00+00:00',
+            ],
+            'Values': [1000, 2000],
+        }],
+    })
+    mock_result = mocker.MagicMock()
+    mock_result.stdout = mock_output
+    mocker.patch('scripts.cloudfront.subprocess.run', return_value=mock_result)
+
+    from scripts.cloudfront import fetch_cloudfront_bytes
+
+    result = fetch_cloudfront_bytes('DIST123', '2026-01-25', '2026-01-31')
+    # 16:00 UTC = 00:00 Jan 26 UTC+8, 17:00 UTC = 01:00 Jan 26 UTC+8
+    assert result == {'01/26': 3000}
