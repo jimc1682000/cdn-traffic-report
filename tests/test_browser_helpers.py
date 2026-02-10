@@ -19,8 +19,9 @@ def test_report_hash_contains_geography():
     assert 'Traffic by Geography' in REPORT_HASH
 
 
-def test_navigate_to_report_invalid_name_raises():
+def test_navigate_to_report_invalid_name_raises(mocker):
     """Unknown report name should raise KeyError from REPORT_HASH lookup."""
+    mocker.patch('scripts.browser_helpers.ab_eval', return_value='"Some Other Page"')
     with pytest.raises(KeyError):
         navigate_to_report('Traffic by Nonexistent')
 
