@@ -1,0 +1,8 @@
+{
+  "name": "cdn",
+  "version": "1.0.0",
+  "description": "Akamai + CloudFront CDN traffic report automation",
+  "skills": [
+    "skills/cdn-report/SKILL.md"
+  ]
+}

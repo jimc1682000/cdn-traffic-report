@@ -1,0 +1,38 @@
+browser:
+  ab_bin: "$HOME/.nvm/versions/node/vXX/bin/agent-browser"
+  session: "your-session-name"
+  state_file: "profiles/your-state.json"
+
+akamai_url: "https://control.akamai.com/apps/reports/"
+
+report_types:
+  # Hostname report types — each runs on "Traffic by Hostname" page
+  # Key names are user-defined; geography is reserved for geo reports
+  report_a:
+    label: "Report A"
+    cp_codes: ["123456"]
+    unit: "TB"
+  report_b:
+    label: "Report B"
+    cp_codes: ["ALL"]
+    unit: "TB"
+  report_c:
+    label: "Report C"
+    cp_codes: ["789012"]
+    unit: "TB"
+  report_d:
+    label: "Report D"
+    cp_codes: ["345678", "901234"]
+    unit: "GB"
+  # geography is a reserved key — runs on "Traffic by Geography" page
+  geography:
+    label: "Geography Report"
+    cp_codes: ["ALL"]
+    unit: "TB"
+    # ISO 3166-1 alpha-2 country codes
+    geo_countries: ["US", "JP", "KR"]
+
+cloudfront:
+  distribution_id: "YOUR_DISTRIBUTION_ID"
+  region: "us-east-1"
+  metric_name: "BytesDownloaded"
