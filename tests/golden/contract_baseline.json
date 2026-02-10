@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-02-10T10:29:18.285366+00:00",
+  "results": [
+    {
+      "selector": "#cpcodes-filter-editor",
+      "description": "CP code editor",
+      "page": "hostname",
+      "count": 1,
+      "expected_min": 1,
+      "found": true
+    },
+    {
+      "selector": "input[placeholder='CP codes']",
+      "description": "CP code search",
+      "page": "hostname",
+      "count": 1,
+      "expected_min": 1,
+      "found": true
+    },
+    {
+      "selector": ".akam-calendar-body-cell-content",
+      "description": "Calendar day cells",
+      "page": "hostname",
+      "count": 62,
+      "expected_min": 28,
+      "found": true
+    },
+    {
+      "selector": "akam-single-kpi",
+      "description": "KPI card element",
+      "page": "hostname",
+      "count": 4,
+      "expected_min": 4,
+      "found": true
+    },
+    {
+      "selector": ".single-kpi__title",
+      "description": "KPI title",
+      "page": "hostname",
+      "count": 4,
+      "expected_min": 4,
+      "found": true
+    },
+    {
+      "selector": ".single-kpi__value",
+      "description": "KPI value",
+      "page": "hostname",
+      "count": 4,
+      "expected_min": 4,
+      "found": true
+    },
+    {
+      "selector": ".single-kpi__unit",
+      "description": "KPI unit",
+      "page": "hostname",
+      "count": 4,
+      "expected_min": 4,
+      "found": true
+    },
+    {
+      "selector": "app-date-range-preview",
+      "description": "Filter trigger",
+      "page": "hostname",
+      "count": 2,
+      "expected_min": 1,
+      "found": true
+    },
+    {
+      "selector": "table.cdk-table.akam-table",
+      "description": "Geography table",
+      "page": "geography",
+      "count": 1,
+      "expected_min": 1,
+      "found": true
+    }
+  ]
+}
