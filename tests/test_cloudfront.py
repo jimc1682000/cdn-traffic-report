@@ -66,3 +66,93 @@ def test_aggregate_empty_input():
     """Empty input should return empty dict."""
     result = aggregate_hourly_to_daily([], [])
     assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# aggregate_hourly_to_daily — edge cases
+# ---------------------------------------------------------------------------
+def test_aggregate_single_hour():
+    """Single data point should produce one daily entry."""
+    result = aggregate_hourly_to_daily(['2026-01-25T16:00:00+00:00'], [500])
+    assert result == {'01/26': 500}  # 16:00 UTC = 00:00 Jan 26 UTC+8
+
+
+def test_aggregate_negative_values():
+    """Negative values should be handled (unusual but valid)."""
+    result = aggregate_hourly_to_daily(
+        ['2026-01-25T00:00:00+00:00', '2026-01-25T01:00:00+00:00'],
+        [100, -50],
+    )
+    assert result['01/25'] == 50  # Both hours fall on Jan 25 UTC+8
+
+
+def test_aggregate_midnight_boundary():
+    """Values exactly at midnight UTC+8 boundary."""
+    result = aggregate_hourly_to_daily(
+        ['2026-01-25T15:00:00+00:00', '2026-01-25T16:00:00+00:00'],
+        [100, 200],
+    )
+    # 15:00 UTC = 23:00 Jan 25 UTC+8 → Jan 25
+    # 16:00 UTC = 00:00 Jan 26 UTC+8 → Jan 26
+    assert result['01/25'] == 100
+    assert result['01/26'] == 200
+
+
+# ---------------------------------------------------------------------------
+# convert_dates_to_utc — edge cases
+# ---------------------------------------------------------------------------
+def test_convert_dates_to_utc_leap_year():
+    """Leap year Feb 29 should work."""
+    start_utc, end_utc = convert_dates_to_utc('2028-02-29', '2028-02-29')
+    assert start_utc == '2028-02-28T16:00:00Z'
+    assert end_utc == '2028-02-29T16:00:00Z'
+
+
+def test_convert_dates_to_utc_year_boundary():
+    """Date range spanning year boundary."""
+    start_utc, end_utc = convert_dates_to_utc('2025-12-31', '2026-01-01')
+    assert start_utc == '2025-12-30T16:00:00Z'
+    assert end_utc == '2026-01-01T16:00:00Z'
+
+
+def test_convert_dates_invalid_format():
+    """Invalid date format should raise ValueError from strptime."""
+    import pytest
+
+    with pytest.raises(ValueError):
+        convert_dates_to_utc('2026/01/25', '2026/01/31')
+
+
+# ---------------------------------------------------------------------------
+# fetch_cloudfront_bytes — error paths (mocked)
+# ---------------------------------------------------------------------------
+def test_fetch_cloudfront_bytes_aws_error(mocker):
+    """AWS CLI CalledProcessError should propagate."""
+    import subprocess
+
+    mocker.patch(
+        'scripts.cloudfront.subprocess.run',
+        side_effect=subprocess.CalledProcessError(1, 'aws', stderr='AccessDenied'),
+    )
+    import pytest
+
+    from scripts.cloudfront import fetch_cloudfront_bytes
+
+    with pytest.raises(subprocess.CalledProcessError):
+        fetch_cloudfront_bytes('DIST123', '2026-01-25', '2026-01-31')
+
+
+def test_fetch_cloudfront_bytes_timeout(mocker):
+    """AWS CLI timeout should propagate."""
+    import subprocess
+
+    mocker.patch(
+        'scripts.cloudfront.subprocess.run',
+        side_effect=subprocess.TimeoutExpired(cmd='aws', timeout=60),
+    )
+    import pytest
+
+    from scripts.cloudfront import fetch_cloudfront_bytes
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        fetch_cloudfront_bytes('DIST123', '2026-01-25', '2026-01-31')
