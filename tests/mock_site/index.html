@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mock Akamai Control Center</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    .hidden { display: none; }
+    #filter-panel { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+    .calendar-container { display: flex; gap: 20px; }
+    .calendar { border: 1px solid #ddd; padding: 5px; }
+    .calendar table { border-collapse: collapse; }
+    .calendar th, .calendar td { padding: 4px 8px; text-align: center; }
+    .akam-calendar-body-cell-content { cursor: pointer; }
+    .akam-calendar-body-cell-content:hover { background: #e0e0e0; border-radius: 50%; }
+    #cpcodes-filter-editor { border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
+    .cp-item { padding: 2px 4px; cursor: pointer; }
+    .cp-item:hover { background: #f0f0f0; }
+    akam-single-kpi { display: inline-block; border: 1px solid #ddd; padding: 10px; margin: 5px; min-width: 120px; }
+    .single-kpi__title { font-size: 12px; color: #666; }
+    .single-kpi__value { font-size: 24px; font-weight: bold; }
+    .single-kpi__unit { font-size: 12px; color: #999; }
+    table.cdk-table.akam-table { border-collapse: collapse; width: 100%; }
+    table.cdk-table.akam-table td { border: 1px solid #ddd; padding: 4px 8px; }
+    .month-header { display: inline-flex; align-items: center; gap: 4px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Page title (used by navigate_to_report h2 check) -->
+    <h2 id="page-title">Traffic by Hostname</h2>
+
+    <!-- Filter trigger (akamai_report.py:50) -->
+    <app-date-range-preview id="filter-trigger" style="cursor:pointer; padding:4px 8px; border:1px solid #ccc; display:inline-block;">
+      Date Range Filter
+    </app-date-range-preview>
+
+    <!-- Filter panel (hidden until filter trigger clicked) -->
+    <div id="filter-panel" class="hidden">
+
+      <!-- Calendar (calendar_nav.py) -->
+      <div class="calendar-container">
+        <!-- Left calendar -->
+        <div class="calendar" id="cal-left">
+          <div class="month-header">
+            <button id="cal-prev" aria-label="Previous month"></button>
+            <button id="cal-left-month">January</button>
+            <button id="cal-left-year">2026</button>
+          </div>
+          <table>
+            <thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+            <tbody id="cal-left-body"></tbody>
+          </table>
+        </div>
+        <!-- Right calendar -->
+        <div class="calendar" id="cal-right">
+          <div class="month-header">
+            <button id="cal-right-month">February</button>
+            <button id="cal-right-year">2026</button>
+            <button id="cal-next" aria-label="Next month"></button>
+          </div>
+          <table>
+            <thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+            <tbody id="cal-right-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CP Codes editor (cpcode_select.py:7) -->
+      <div id="cpcodes-filter-editor">
+        <div style="margin-bottom: 5px;">
+          <span id="select-all-link" style="cursor:pointer; color:blue;">Select: All</span>
+          &nbsp;|&nbsp;
+          <span id="deselect-all-link" style="cursor:pointer; color:blue;">Deselect: All</span>
+        </div>
+        <input type="text" placeholder="CP codes" id="cpcode-search" autocomplete="off">
+        <div id="cpcode-list"></div>
+      </div>
+
+      <!-- Apply button (akamai_report.py:64-65) -->
+      <button id="apply-btn" style="margin-top: 10px;">Apply</button>
+    </div>
+
+    <!-- Hostname report content -->
+    <div id="hostname-content">
+      <div id="kpi-container"></div>
+    </div>
+
+    <!-- Geography report content -->
+    <div id="geography-content" class="hidden">
+      <table class="cdk-table akam-table">
+        <tbody id="geo-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="mock_data.js"></script>
+  <script>
+    // ---- State tracking for test assertions ----
+    window.__mockState = {
+      selectedDates: [],
+      selectedCpCodes: [],
+      appliedCount: 0,
+      filterOpen: false
+    };
+
+    // ---- Calendar state ----
+    let calLeftYear, calLeftMonth, calRightYear, calRightMonth;
+
+    function initCalendar() {
+      const init = window.MOCK_DATA.initialMonth;
+      calLeftYear = init.year;
+      calLeftMonth = init.month; // 0-indexed
+      calRightYear = init.month === 11 ? init.year + 1 : init.year;
+      calRightMonth = (init.month + 1) % 12;
+      renderCalendars();
+    }
+
+    const MONTH_NAMES = [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
+    ];
+
+    function renderCalendars() {
+      document.getElementById('cal-left-month').textContent = MONTH_NAMES[calLeftMonth];
+      document.getElementById('cal-left-year').textContent = calLeftYear;
+      document.getElementById('cal-right-month').textContent = MONTH_NAMES[calRightMonth];
+      document.getElementById('cal-right-year').textContent = calRightYear;
+      renderCalendarBody('cal-left-body', calLeftYear, calLeftMonth);
+      renderCalendarBody('cal-right-body', calRightYear, calRightMonth);
+    }
+
+    function renderCalendarBody(tbodyId, year, month) {
+      const tbody = document.getElementById(tbodyId);
+      tbody.innerHTML = '';
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      let day = 1;
+      for (let row = 0; row < 6 && day <= daysInMonth; row++) {
+        const tr = document.createElement('tr');
+        for (let col = 0; col < 7; col++) {
+          const td = document.createElement('td');
+          if ((row === 0 && col < firstDay) || day > daysInMonth) {
+            td.textContent = '';
+          } else {
+            const span = document.createElement('span');
+            span.className = 'akam-calendar-body-cell-content';
+            span.textContent = day;
+            const d = day;
+            const m = month;
+            const y = year;
+            span.addEventListener('click', function() {
+              const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+              window.__mockState.selectedDates.push(dateStr);
+            });
+            td.appendChild(span);
+            day++;
+          }
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    // Calendar navigation
+    document.getElementById('cal-prev').addEventListener('click', function() {
+      calLeftMonth--;
+      if (calLeftMonth < 0) { calLeftMonth = 11; calLeftYear--; }
+      calRightMonth--;
+      if (calRightMonth < 0) { calRightMonth = 11; calRightYear--; }
+      renderCalendars();
+    });
+
+    document.getElementById('cal-next').addEventListener('click', function() {
+      calLeftMonth++;
+      if (calLeftMonth > 11) { calLeftMonth = 0; calLeftYear++; }
+      calRightMonth++;
+      if (calRightMonth > 11) { calRightMonth = 0; calRightYear++; }
+      renderCalendars();
+    });
+
+    // ---- KPI Cards ----
+    function renderKpiCards() {
+      const container = document.getElementById('kpi-container');
+      container.innerHTML = '';
+      for (const card of window.MOCK_DATA.kpiCards) {
+        const el = document.createElement('akam-single-kpi');
+        el.innerHTML = `
+          <div class="single-kpi__title">${card.title}</div>
+          <div class="single-kpi__value">${card.value}</div>
+          <div class="single-kpi__unit">${card.unit}</div>
+        `;
+        container.appendChild(el);
+      }
+    }
+
+    // ---- Geography Table ----
+    function renderGeographyTable() {
+      const tbody = document.getElementById('geo-table-body');
+      tbody.innerHTML = '';
+      for (const row of window.MOCK_DATA.geographyRows) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${row.country}</td><td>${row.bytes}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // ---- CP Codes ----
+    function renderCpCodes(filter) {
+      const list = document.getElementById('cpcode-list');
+      list.innerHTML = '';
+      const codes = window.MOCK_DATA.cpCodes;
+      for (const code of codes) {
+        if (filter && !code.includes(filter)) continue;
+        const div = document.createElement('div');
+        div.className = 'cp-item';
+        div.textContent = `(${code})`;
+        div.addEventListener('click', function() {
+          const idx = window.__mockState.selectedCpCodes.indexOf(code);
+          if (idx === -1) {
+            window.__mockState.selectedCpCodes.push(code);
+          } else {
+            window.__mockState.selectedCpCodes.splice(idx, 1);
+          }
+        });
+        list.appendChild(div);
+      }
+    }
+
+    // Select All
+    document.getElementById('select-all-link').addEventListener('click', function() {
+      window.__mockState.selectedCpCodes = [...window.MOCK_DATA.cpCodes];
+    });
+
+    // Deselect All
+    document.getElementById('deselect-all-link').addEventListener('click', function() {
+      window.__mockState.selectedCpCodes = [];
+    });
+
+    // CP code search filtering
+    document.getElementById('cpcode-search').addEventListener('input', function(e) {
+      renderCpCodes(e.target.value);
+    });
+
+    // ---- Filter panel toggle ----
+    document.querySelector('app-date-range-preview').addEventListener('click', function() {
+      const panel = document.getElementById('filter-panel');
+      panel.classList.remove('hidden');
+      window.__mockState.filterOpen = true;
+    });
+
+    // ---- Apply button ----
+    document.getElementById('apply-btn').addEventListener('click', function() {
+      window.__mockState.appliedCount++;
+    });
+
+    // ---- Hash routing (browser_helpers.py:86-88) ----
+    function handleRoute() {
+      const hash = window.location.hash;
+      const title = document.getElementById('page-title');
+      const hostnameContent = document.getElementById('hostname-content');
+      const geoContent = document.getElementById('geography-content');
+
+      if (hash === '#/predefined/traffic-by-geography') {
+        title.textContent = 'Traffic by Geography';
+        hostnameContent.classList.add('hidden');
+        geoContent.classList.remove('hidden');
+        // Reset filter panel state for geography
+        document.getElementById('filter-panel').classList.add('hidden');
+        window.__mockState.filterOpen = false;
+      } else {
+        // Default: hostname (includes #/predefined/traffic-by-hostname-2)
+        title.textContent = 'Traffic by Hostname';
+        hostnameContent.classList.remove('hidden');
+        geoContent.classList.add('hidden');
+        document.getElementById('filter-panel').classList.add('hidden');
+        window.__mockState.filterOpen = false;
+      }
+    }
+
+    window.addEventListener('hashchange', handleRoute);
+
+    // ---- Initialize ----
+    initCalendar();
+    renderKpiCards();
+    renderGeographyTable();
+    renderCpCodes('');
+    handleRoute();
+  </script>
+</body>
+</html>

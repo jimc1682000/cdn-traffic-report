@@ -127,7 +127,9 @@ scripts/
   data_extract.py                 # KPI 卡片與地理表格資料擷取
   cloudfront.py                   # AWS CloudWatch 指標取得
   refresh_session.py              # Session cookie 管理
+  contract_check.py               # DOM selector 合約檢查
 tests/                            # pytest 單元測試
+  mock_site/                      # 本地 mock Akamai SPA（integration tests）
 profiles/                         # 瀏覽器狀態檔（gitignored）
 output/                           # 報表輸出檔（gitignored）
 ```
@@ -135,11 +137,24 @@ output/                           # 報表輸出檔（gitignored）
 ## 測試
 
 ```bash
-# 單元測試
-uv run pytest tests/ -v
+# 單元測試（排除 integration）
+uv run pytest tests/ -v -m "not integration"
+
+# Integration tests（需要 agent-browser）
+uv run pytest tests/test_mock_integration.py -v
 
 # Lint
 uv run ruff check scripts/ tests/
+```
+
+### Contract Check
+
+連線真實 Akamai 驗證 DOM selector 是否仍存在，用於偵測 UI 改版：
+
+```bash
+uv run python -m scripts.contract_check --headed            # 執行檢查
+uv run python -m scripts.contract_check --headed --save     # 存 baseline
+uv run python -m scripts.contract_check --headed --diff     # 比對 baseline
 ```
 
 ## 延伸閱讀
