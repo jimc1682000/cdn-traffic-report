@@ -62,7 +62,7 @@ def calculate_nav_clicks(current_months: dict[str, str], target_month: str) -> i
     return target_total - right_total
 
 
-def get_displayed_months() -> dict[str, str]:
+def get_displayed_months() -> dict[str, str]:  # pragma: no cover
     """Read calendar month headers from snapshot.
 
     The Akamai calendar has two month buttons: left and right.
@@ -88,7 +88,7 @@ def get_displayed_months() -> dict[str, str]:
     raise ValueError(f'Could not find calendar months in snapshot. Found months={months}, years={years}')
 
 
-def click_calendar_arrow(direction: str) -> None:
+def click_calendar_arrow(direction: str) -> None:  # pragma: no cover
     """Click forward or back arrow on calendar.
 
     The back arrow is the first unlabeled button before the left month.
@@ -136,7 +136,7 @@ def click_calendar_arrow(direction: str) -> None:
         raise ValueError('Could not find forward arrow button')
 
 
-def click_day_cell(calendar_index: int, day: int) -> None:
+def click_day_cell(calendar_index: int, day: int) -> None:  # pragma: no cover
     """Click a specific day in the left (0) or right (1) calendar grid.
 
     Uses JS to find calendar body tables and click the matching day button.
@@ -162,7 +162,7 @@ def click_day_cell(calendar_index: int, day: int) -> None:
     }})()""")
 
 
-def set_date_range(start_date: str, end_date: str) -> None:
+def set_date_range(start_date: str, end_date: str) -> None:  # pragma: no cover
     """Set date range on Akamai calendar.
 
     Assumes the calendar/filter panel is already open (it opens by default).

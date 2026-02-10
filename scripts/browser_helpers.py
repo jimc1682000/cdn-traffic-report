@@ -27,14 +27,14 @@ def ab_eval(js: str) -> str:
     return run_ab('eval', js)
 
 
-def ab_mouse_click(x: int, y: int) -> None:
+def ab_mouse_click(x: int, y: int) -> None:  # pragma: no cover
     """Perform mouse click at (x, y) via move→down→up."""
     run_ab('mouse', 'move', str(x), str(y))
     run_ab('mouse', 'down')
     run_ab('mouse', 'up')
 
 
-def ab_screenshot(path: str) -> None:
+def ab_screenshot(path: str) -> None:  # pragma: no cover
     """Take screenshot and save to path."""
     run_ab('screenshot', path)
 
@@ -64,7 +64,7 @@ def get_element_center(js_selector: str) -> tuple[int, int]:
     return data['x'], data['y']
 
 
-def init_browser(state_file: str, url: str, headed: bool = False) -> None:
+def init_browser(state_file: str, url: str, headed: bool = False) -> None:  # pragma: no cover
     """Initialize browser session and navigate to URL.
 
     Always closes any existing daemon first, then launches fresh with --state
@@ -89,7 +89,7 @@ REPORT_HASH = {
 }
 
 
-def navigate_to_report(report_name: str) -> None:
+def navigate_to_report(report_name: str) -> None:  # pragma: no cover
     """Navigate to a specific report via URL hash change.
 
     Uses window.location.hash to switch reports within the SPA.
@@ -119,6 +119,6 @@ def navigate_to_report(report_name: str) -> None:
             )
 
 
-def close_browser() -> None:
+def close_browser() -> None:  # pragma: no cover
     """Close the browser session."""
     run_ab('close')

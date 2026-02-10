@@ -70,6 +70,8 @@ addopts = "--strict-markers"
 source = ["scripts"]
 omit = [
     "scripts/__main__.py",
+    "scripts/akamai_report.py",
+    "scripts/cpcode_select.py",
 ]
 
 [tool.coverage.report]

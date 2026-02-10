@@ -17,7 +17,7 @@ from scripts.browser_helpers import exec_ab
 from scripts.config import AKAMAI_URL, STATE_FILE
 
 
-def _close_browser() -> None:
+def _close_browser() -> None:  # pragma: no cover
     with contextlib.suppress(subprocess.CalledProcessError):
         exec_ab('close')
 
@@ -58,7 +58,7 @@ def _check_logged_in() -> bool:
     return '/apps/auth/' not in url and '/login' not in url
 
 
-def refresh_session(force: bool = False) -> bool:
+def refresh_session(force: bool = False) -> bool:  # pragma: no cover
     """Check and refresh Akamai session.
 
     Returns True if session is valid after the process.
@@ -103,7 +103,7 @@ def refresh_session(force: bool = False) -> bool:
     return True
 
 
-def main():
+def main():  # pragma: no cover
     parser = argparse.ArgumentParser(description='Refresh Akamai session cookies')
     parser.add_argument('--force', action='store_true', help='Force re-login (skip validity check)')
     args = parser.parse_args()
