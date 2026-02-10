@@ -115,3 +115,86 @@ def test_build_report_output_geography_type():
     assert output['unit'] == 'TB'
     assert 'geography' in output
     assert output['geography']['US'] == 100.0
+
+
+# ---------------------------------------------------------------------------
+# parse_traffic_value — additional edge cases
+# ---------------------------------------------------------------------------
+def test_parse_traffic_value_unknown_unit():
+    """Unknown unit not in UNIT_MAP should be returned as-is."""
+    value, unit = parse_traffic_value('100.5 Petabytes')
+    assert value == 100.5
+    assert unit == 'Petabytes'
+
+
+def test_parse_traffic_value_megabytes():
+    value, unit = parse_traffic_value('512.00 Megabytes')
+    assert value == 512.0
+    assert unit == 'MB'
+
+
+def test_parse_traffic_value_bytes():
+    value, unit = parse_traffic_value('1024 Bytes')
+    assert value == 1024.0
+    assert unit == 'B'
+
+
+# ---------------------------------------------------------------------------
+# bytes_to_tb — boundary cases
+# ---------------------------------------------------------------------------
+def test_bytes_to_tb_negative():
+    """Negative bytes should return negative TB."""
+    assert bytes_to_tb(-1_000_000_000_000) == -1.0
+
+
+def test_bytes_to_tb_very_large():
+    """Very large byte count (exabyte range)."""
+    assert bytes_to_tb(1_500_000_000_000_000) == 1500.0
+
+
+def test_bytes_to_tb_float_input():
+    """Float input should work."""
+    assert bytes_to_tb(1.5e12) == 1.5
+
+
+# ---------------------------------------------------------------------------
+# convert_unit — boundary cases
+# ---------------------------------------------------------------------------
+def test_convert_unit_zero():
+    """Zero converts to zero regardless of units."""
+    assert convert_unit(0.0, 'TB', 'GB') == 0.0
+
+
+def test_convert_unit_b_to_tb():
+    """Bytes to TB."""
+    assert convert_unit(1e12, 'B', 'TB') == 1.0
+
+
+# ---------------------------------------------------------------------------
+# build_report_output — empty geography handling
+# ---------------------------------------------------------------------------
+def test_build_report_output_empty_geography_excluded():
+    """Empty dict geography should NOT be included (falsy)."""
+    output = build_report_output(
+        report_type='geo',
+        label='Test',
+        start_date='2026-01-25',
+        end_date='2026-01-31',
+        traffic={},
+        unit='TB',
+        geography={},
+    )
+    assert 'geography' not in output
+
+
+def test_build_report_output_none_geography_excluded():
+    """None geography (default) should NOT be included."""
+    output = build_report_output(
+        report_type='test',
+        label='Test',
+        start_date='2026-01-25',
+        end_date='2026-01-31',
+        traffic={},
+        unit='TB',
+    )
+    assert 'geography' not in output
