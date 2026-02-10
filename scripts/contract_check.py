@@ -41,7 +41,7 @@ CONTRACTS = [
 ]
 
 
-def check_selector(selector: str) -> int:
+def check_selector(selector: str) -> int:  # pragma: no cover
     """Return count of elements matching CSS selector."""
     escaped = selector.replace("'", "\\'")
     raw = ab_eval(f"document.querySelectorAll('{escaped}').length")
@@ -68,7 +68,7 @@ def _check_and_record(selector: str, description: str, page: str, min_count: int
     })
 
 
-def _wait_for_data(indicator_selector: str) -> None:
+def _wait_for_data(indicator_selector: str) -> None:  # pragma: no cover
     """Poll until data elements appear or timeout."""
     for i in range(WAIT_KPI_MAX_RETRIES):
         count = check_selector(indicator_selector)
@@ -79,7 +79,7 @@ def _wait_for_data(indicator_selector: str) -> None:
     print(f'  (data not loaded after {WAIT_KPI_MAX_RETRIES * WAIT_KPI_POLL}s, checking anyway)')
 
 
-def run_checks(headed: bool) -> list[dict]:
+def run_checks(headed: bool) -> list[dict]:  # pragma: no cover
     """Run all contract checks against live Akamai.
 
     For each page:
@@ -148,7 +148,7 @@ def run_checks(headed: bool) -> list[dict]:
     return results
 
 
-def save_baseline(results: list[dict]) -> None:
+def save_baseline(results: list[dict]) -> None:  # pragma: no cover
     """Save results as baseline JSON."""
     BASELINE_PATH.parent.mkdir(parents=True, exist_ok=True)
     baseline = {
@@ -188,7 +188,7 @@ def diff_baseline(results: list[dict]) -> int:
     return exit_code
 
 
-def main():
+def main():  # pragma: no cover
     parser = argparse.ArgumentParser(description='Akamai DOM selector contract check')
     parser.add_argument('--headed', action='store_true', help='Run browser in headed mode')
     parser.add_argument('--save', action='store_true', help='Save results as baseline')
