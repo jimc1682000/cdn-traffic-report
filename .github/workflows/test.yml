@@ -30,6 +30,8 @@ jobs:
 
       - name: Unit tests with coverage
         run: uv run pytest tests/ -v -m "not integration" --cov=scripts --cov-report=xml --cov-report=term-missing
+        env:
+          CDN_SKIP_AB_CHECK: "1"
 
       - name: Upload coverage to Codecov
         if: always()
