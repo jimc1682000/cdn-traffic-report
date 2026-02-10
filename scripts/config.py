@@ -1,5 +1,6 @@
 """Report type configs and constants, loaded from config/settings.yaml."""
 
+import os
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,8 +20,8 @@ def _load_settings() -> dict:
 _settings = _load_settings()
 
 # Browser settings
-AB_BIN = _settings['browser']['ab_bin']
-if not Path(AB_BIN).exists() and not shutil.which(AB_BIN):
+AB_BIN = os.path.expandvars(_settings['browser']['ab_bin'])
+if not os.environ.get('CDN_SKIP_AB_CHECK') and not Path(AB_BIN).exists() and not shutil.which(AB_BIN):
     raise FileNotFoundError(f'agent-browser binary not found: {AB_BIN}')
 SESSION = _settings['browser']['session']
 STATE_FILE = str(_PROJECT_ROOT / _settings['browser']['state_file'])
