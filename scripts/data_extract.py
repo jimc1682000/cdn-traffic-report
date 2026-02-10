@@ -52,7 +52,7 @@ def bytes_to_tb(byte_count: int | float) -> float:
     return round(byte_count / 1e12, 2)
 
 
-def extract_traffic_cards() -> dict:
+def extract_traffic_cards() -> dict:  # pragma: no cover
     """Extract Edge/Origin/Midgress/Offload from Akamai KPI cards via JS.
 
     Reads from akam-single-kpi elements with .single-kpi__title/value/unit.
@@ -85,7 +85,7 @@ def extract_traffic_cards() -> dict:
     return result
 
 
-def extract_geography_table(countries: list[str]) -> dict[str, float]:
+def extract_geography_table(countries: list[str]) -> dict[str, float]:  # pragma: no cover
     """Extract geography data from Traffic by Geography report table.
 
     The table uses class 'cdk-table akam-table' with columns:
