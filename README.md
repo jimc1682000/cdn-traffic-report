@@ -1,5 +1,8 @@
 # CDN Traffic Report
 
+[![Tests](https://github.com/jimc1682000/cdn-traffic-report/actions/workflows/test.yml/badge.svg)](https://github.com/jimc1682000/cdn-traffic-report/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/jimc1682000/cdn-traffic-report/graph/badge.svg)](https://codecov.io/gh/jimc1682000/cdn-traffic-report)
+
 自動化 CDN 流量報表工具，從 **Akamai Control Center** 和 **AWS CloudFront** 提取數據。
 
 透過瀏覽器自動化（[agent-browser](https://github.com/nicholasq/agent-browser)）操作 Akamai SPA 儀表板，擷取 KPI 卡片與地理流量表格；同時透過 AWS CloudWatch CLI 取得 CloudFront 指標。

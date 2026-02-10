@@ -64,3 +64,19 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 markers = ["integration: requires agent-browser binary"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+source = ["scripts"]
+omit = [
+    "scripts/__main__.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+]
