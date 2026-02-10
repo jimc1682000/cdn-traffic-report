@@ -114,9 +114,7 @@ def navigate_to_report(report_name: str) -> None:  # pragma: no cover
         time.sleep(8)
         retry_title = ab_eval("document.querySelector('h2')?.textContent?.trim() || ''")
         if report_name not in retry_title:
-            raise RuntimeError(
-                f'Failed to navigate to {report_name!r} after retry (got {retry_title!r})'
-            )
+            raise RuntimeError(f'Failed to navigate to {report_name!r} after retry (got {retry_title!r})')
 
 
 def close_browser() -> None:  # pragma: no cover

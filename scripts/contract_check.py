@@ -58,14 +58,16 @@ def _check_and_record(selector: str, description: str, page: str, min_count: int
     status = 'OK' if found else 'MISSING'
     icon = '\u2705' if found else '\u274c'
     print(f'  {icon} [{status}] {description}: {selector} (found={count}, expected>={min_count})')
-    results.append({
-        'selector': selector,
-        'description': description,
-        'page': page,
-        'count': count,
-        'expected_min': min_count,
-        'found': found,
-    })
+    results.append(
+        {
+            'selector': selector,
+            'description': description,
+            'page': page,
+            'count': count,
+            'expected_min': min_count,
+            'found': found,
+        }
+    )
 
 
 def _wait_for_data(indicator_selector: str) -> None:  # pragma: no cover
@@ -168,7 +170,7 @@ def diff_baseline(results: list[dict]) -> int:
     baseline = json.loads(BASELINE_PATH.read_text())
     baseline_map = {r['selector']: r for r in baseline['results']}
 
-    print(f"\nComparing to baseline from {baseline['timestamp']}:")
+    print(f'\nComparing to baseline from {baseline["timestamp"]}:')
     exit_code = 0
 
     for result in results:
@@ -181,7 +183,9 @@ def diff_baseline(results: list[dict]) -> int:
             print(f'  \U0001f534 BROKEN: {result["description"]}: {sel} (was {old["count"]}, now {result["count"]})')
             exit_code = 1
         elif result['count'] < old['count']:
-            print(f'  \u26a0\ufe0f  WARNING: {result["description"]}: {sel} count decreased ({old["count"]} -> {result["count"]})')
+            print(
+                f'  \u26a0\ufe0f  WARNING: {result["description"]}: {sel} count decreased ({old["count"]} -> {result["count"]})'
+            )
         else:
             print(f'  \u2705 OK: {result["description"]}: {sel} ({result["count"]})')
 
