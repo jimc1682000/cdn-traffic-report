@@ -57,7 +57,9 @@ def test_diff_baseline_all_ok(tmp_path, mocker):
     baseline_path.write_text(json.dumps(baseline))
     mocker.patch('scripts.contract_check.BASELINE_PATH', baseline_path)
 
-    results = [{'selector': 'akam-single-kpi', 'description': 'KPI card', 'page': 'hostname', 'count': 4, 'found': True}]
+    results = [
+        {'selector': 'akam-single-kpi', 'description': 'KPI card', 'page': 'hostname', 'count': 4, 'found': True}
+    ]
     assert diff_baseline(results) == 0
 
 
@@ -73,7 +75,9 @@ def test_diff_baseline_broken(tmp_path, mocker):
     baseline_path.write_text(json.dumps(baseline))
     mocker.patch('scripts.contract_check.BASELINE_PATH', baseline_path)
 
-    results = [{'selector': '.single-kpi__value', 'description': 'KPI value', 'page': 'hostname', 'count': 0, 'found': False}]
+    results = [
+        {'selector': '.single-kpi__value', 'description': 'KPI value', 'page': 'hostname', 'count': 0, 'found': False}
+    ]
     assert diff_baseline(results) == 1
 
 
@@ -90,7 +94,13 @@ def test_diff_baseline_count_decreased(tmp_path, mocker):
     mocker.patch('scripts.contract_check.BASELINE_PATH', baseline_path)
 
     results = [
-        {'selector': '.akam-calendar-body-cell-content', 'description': 'Calendar cells', 'page': 'hostname', 'count': 30, 'found': True},
+        {
+            'selector': '.akam-calendar-body-cell-content',
+            'description': 'Calendar cells',
+            'page': 'hostname',
+            'count': 30,
+            'found': True,
+        },
     ]
     assert diff_baseline(results) == 0
 
@@ -105,7 +115,9 @@ def test_diff_baseline_new_selector(tmp_path, mocker):
     baseline_path.write_text(json.dumps(baseline))
     mocker.patch('scripts.contract_check.BASELINE_PATH', baseline_path)
 
-    results = [{'selector': '.new-element', 'description': 'New element', 'page': 'hostname', 'count': 3, 'found': True}]
+    results = [
+        {'selector': '.new-element', 'description': 'New element', 'page': 'hostname', 'count': 3, 'found': True}
+    ]
     assert diff_baseline(results) == 0
 
 
