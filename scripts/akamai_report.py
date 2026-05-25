@@ -6,11 +6,10 @@ import json
 import time
 from pathlib import Path
 
-from scripts.browser_helpers import ab_eval, ab_screenshot, close_browser, init_browser, navigate_to_report, run_ab
-from scripts.calendar_nav import set_date_range
+from scripts.browser_helpers import ab_eval, ab_screenshot, close_browser, init_browser
 from scripts.cloudfront import fetch_cloudfront_bytes
 from scripts.config import AKAMAI_URL, CLOUDFRONT_CONFIG, REPORT_TYPES, STATE_FILE
-from scripts.cpcode_select import CP_EDITOR_ID, select_cp_codes
+from scripts.csv_writer import append_weekly_row
 from scripts.data_extract import (
     build_report_output,
     convert_unit,
@@ -25,51 +24,53 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / 'output'
 GOLDEN_DIR = Path(__file__).resolve().parent.parent / 'tests' / 'golden'
 
 # Browser automation wait times (seconds)
-WAIT_UI_UPDATE = 2
-WAIT_REPORT_LOAD = 10
+WAIT_AFTER_NAV = 8
+WAIT_AFTER_APPLY = 12
 WAIT_BROWSER_INIT = 5
 
+REPORT_HASH = {
+    'hostname': '#/predefined/traffic-by-hostname-2',
+    'geography': '#/predefined/traffic-by-geography',
+}
 
-def _setup_report_filters(
-    report_type: str,
-    report_page: str,
-    config,
-    start_date: str,
-    end_date: str,
-) -> None:
-    """Navigate to report page and apply date range + CP code filters.
 
-    Shared setup flow for both hostname and geography reports:
-    navigate → open filter panel → set date → select CP codes → Apply.
+def _build_report_hash(page: str, cp_codes: list[str], start_date: str, end_date: str) -> str:
+    """Build the SPA hash with cpcodes + date range + timezone query params."""
+    cp_param = 'all' if cp_codes == ['ALL'] else ','.join(cp_codes)
+    return (
+        f'{REPORT_HASH[page]}'
+        f'?cpcodes={cp_param}'
+        f'&start={start_date}T00:00:00Z'
+        f'&end={end_date}T23:59:59Z'
+        f'&timezone=Greenwich&report=1'
+    )
+
+
+def _navigate_with_filters(page: str, cp_codes: list[str], start_date: str, end_date: str) -> None:
+    """Navigate to a report URL with embedded filters, then click Apply.
+
+    URL-driven flow that bypasses calendar + CP code sidebar UI.
     """
-    print(f'[{report_type}] Running: {config.label}')
+    hash_path = _build_report_hash(page, cp_codes, start_date, end_date)
+    ab_eval(f'window.location.hash = {json.dumps(hash_path)}')
+    time.sleep(WAIT_AFTER_NAV)
 
-    navigate_to_report(report_page)
-
-    # Open filter panel (wait command blocks until element appears)
-    ab_eval("document.querySelector('app-date-range-preview')?.click()")
-    run_ab('wait', f'#{CP_EDITOR_ID}')
-
-    # Set date range
-    print(f'[{report_type}] Setting date range: {start_date} to {end_date}')
-    set_date_range(start_date, end_date)
-    time.sleep(WAIT_UI_UPDATE)
-
-    # Select CP codes
-    print(f'[{report_type}] Selecting CP codes: {config.cp_codes}')
-    select_cp_codes(config)
-    time.sleep(WAIT_UI_UPDATE)
-
-    # Click Apply
-    run_ab('scrollintoview', "button:has-text('Apply')")
-    run_ab('click', "button:has-text('Apply')")
-    time.sleep(WAIT_REPORT_LOAD)
+    # Filter panel opens automatically with the new params; just click Apply.
+    result = ab_eval(
+        "(() => { const b = Array.from(document.querySelectorAll('button'))"
+        ".find(x => x.textContent && x.textContent.trim() === 'Apply');"
+        " if (!b) return 'not_found'; b.scrollIntoView(); b.click(); return 'clicked'; })()"
+    )
+    if 'not_found' in result:
+        raise RuntimeError(f'Apply button not found on {page} report')
+    time.sleep(WAIT_AFTER_APPLY)
 
 
 def run_akamai_report(report_type: str, start_date: str, end_date: str) -> dict:
     """Run a single Akamai traffic-by-hostname report type. Browser must already be initialized."""
     config = REPORT_TYPES[report_type]
-    _setup_report_filters(report_type, 'Traffic by Hostname', config, start_date, end_date)
+    print(f'[{report_type}] Running: {config.label} cpcodes={config.cp_codes} unit={config.unit}')
+    _navigate_with_filters('hostname', config.cp_codes, start_date, end_date)
 
     # Extract traffic data
     print(f'[{report_type}] Extracting traffic data...')
@@ -80,7 +81,8 @@ def run_akamai_report(report_type: str, start_date: str, end_date: str) -> dict:
         if key in cards:
             val = cards[key]['value']
             src_unit = cards[key]['unit']
-            if src_unit == '%':
+            # Empty unit (N/A path) or % stays as-is; otherwise convert to configured unit.
+            if not src_unit or src_unit == '%':
                 traffic[key] = val
             elif src_unit != config.unit:
                 traffic[key] = convert_unit(val, src_unit, config.unit)
@@ -105,7 +107,8 @@ def run_akamai_report(report_type: str, start_date: str, end_date: str) -> dict:
 def run_geography_report(start_date: str, end_date: str) -> dict:
     """Run geography report (Traffic by Geography). Browser must already be initialized."""
     config = REPORT_TYPES['geography']
-    _setup_report_filters('geography', 'Traffic by Geography', config, start_date, end_date)
+    print(f'[geography] Running: {config.label} countries={config.geo_countries}')
+    _navigate_with_filters('geography', config.cp_codes, start_date, end_date)
 
     # Extract geography data
     print('[geography] Extracting geography data...')
@@ -155,7 +158,17 @@ def main():
         help='Report type (omit for all)',
     )
     parser.add_argument('--headed', action='store_true', help='Run browser in headed mode')
+    parser.add_argument(
+        '--reuse-browser',
+        action='store_true',
+        help='Assume browser already initialized + logged in; skip init_browser/close_browser',
+    )
     parser.add_argument('--output', help='Output JSON file path')
+    parser.add_argument(
+        '--weekly-csv',
+        default=str(OUTPUT_DIR / 'weekly.csv'),
+        help='Path to weekly CSV (append-only); pass empty string to disable',
+    )
     parser.add_argument('--save-golden', action='store_true', help='Save each result as golden data in tests/golden/')
     args = parser.parse_args()
 
@@ -176,8 +189,9 @@ def main():
 
     # Run all Akamai reports in a single browser session
     if akamai_hostname_types or run_geo:
-        init_browser(STATE_FILE, AKAMAI_URL, headed=args.headed)
-        time.sleep(WAIT_BROWSER_INIT)
+        if not args.reuse_browser:
+            init_browser(STATE_FILE, AKAMAI_URL, headed=args.headed)
+            time.sleep(WAIT_BROWSER_INIT)
         try:
             for report_type in akamai_hostname_types:
                 result = run_akamai_report(report_type, args.start, args.end)
@@ -189,7 +203,8 @@ def main():
                 results.append(result)
                 print(json.dumps(result, ensure_ascii=False, indent=2))
         finally:
-            close_browser()
+            if not args.reuse_browser:
+                close_browser()
 
     # Run CloudFront (no browser needed)
     if run_cf:
@@ -205,6 +220,13 @@ def main():
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(results if len(results) > 1 else results[0], f, ensure_ascii=False, indent=2)
     print(f'\nOutput saved: {output_path}')
+
+    # Append weekly CSV row (skip if --weekly-csv "")
+    if args.weekly_csv and args.type is None:
+        csv_path = append_weekly_row(results, Path(args.weekly_csv))
+        print(f'Weekly CSV row appended: {csv_path}')
+    elif args.weekly_csv and args.type is not None:
+        print('Skipping weekly CSV: --type given (partial run)')
 
     # Save golden data (one file per report type)
     if args.save_golden:
