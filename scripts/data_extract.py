@@ -9,12 +9,14 @@ UNIT_MAP = {
     'Terabytes': 'TB',
     'Gigabytes': 'GB',
     'Megabytes': 'MB',
+    'Kilobytes': 'KB',
     'Bytes': 'B',
     '%': '%',
 }
 
 UNIT_BYTES = {
     'B': 1,
+    'KB': 1e3,
     'MB': 1e6,
     'GB': 1e9,
     'TB': 1e12,
@@ -52,6 +54,11 @@ def bytes_to_tb(byte_count: int | float) -> float:
     return round(byte_count / 1e12, 2)
 
 
+def bytes_to_gb(byte_count: int | float) -> float:
+    """Convert raw bytes to GB, rounded to 2 decimals."""
+    return round(byte_count / 1e9, 2)
+
+
 def extract_traffic_cards() -> dict:  # pragma: no cover
     """Extract Edge/Origin/Midgress/Offload from Akamai KPI cards via JS.
 
@@ -80,7 +87,11 @@ def extract_traffic_cards() -> dict:  # pragma: no cover
     data = json.loads(raw)
     result = {}
     for key, text in data.items():
-        val, unit = parse_traffic_value(text.strip())
+        text = text.strip()
+        if text.upper().startswith('N/A'):
+            result[key] = {'value': 0.0, 'unit': ''}
+            continue
+        val, unit = parse_traffic_value(text)
         result[key] = {'value': val, 'unit': unit}
     return result
 

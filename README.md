@@ -36,30 +36,58 @@ cp config/settings.yaml.template config/settings.yaml
 
 ## 使用方式
 
-### Session 管理
+### Session 管理（重要）
 
-Akamai 使用的 session cookie 會在瀏覽器關閉時失效，執行報表前需先刷新：
+Akamai 使用 httpOnly session cookies，而 `agent-browser --state` 載入時會過濾掉這些 cookies，
+導致 `refresh_session` 存的 state 在重啟瀏覽器後無法還原登入。**實際運作流程改為：
+保持瀏覽器開著、同 session 內跑報表**。
 
 ```bash
-uv run python -m scripts.refresh_session          # 自動偵測有效性
-uv run python -m scripts.refresh_session --force   # 強制重新登入
+# 1. 開 headed 瀏覽器，手動 SSO/MFA 登入
+agent-browser --session akamai-catchplay --headed open https://control.akamai.com/apps/reports/
+
+# 2. 看到 Reports page 後，於另一個 terminal 接著跑（不要關瀏覽器）
+uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reuse-browser
 ```
+
+`refresh_session.py` 仍保留以維護 state 檔，但目前不可單獨依賴它做後續執行。
 
 ### 執行報表
 
 ```bash
-# 全部報表類型
-uv run python -m scripts.akamai_report --start 2026-01-25 --end 2026-01-31
+# 全部報表類型（reuse 已登入的 browser daemon）
+uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reuse-browser
 
-# 單一報表類型（使用 settings.yaml 中定義的類型名稱）
-uv run python -m scripts.akamai_report --start 2026-01-25 --end 2026-01-31 --type <type>
+# 單一報表類型（settings.yaml 自訂類型名）
+uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reuse-browser --type v3
 
-# 顯示瀏覽器（除錯用）
-uv run python -m scripts.akamai_report --start 2026-01-25 --end 2026-01-31 --headed
+# 輸出至指定 JSON
+uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reuse-browser --output result.json
 
-# 輸出至指定檔案
-uv run python -m scripts.akamai_report --start 2026-01-25 --end 2026-01-31 --output result.json
+# 停用每週 CSV append（預設 append 到 output/weekly.csv）
+uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reuse-browser --weekly-csv ""
 ```
+
+報表透過 URL hash 直接帶 `cpcodes/start/end/timezone` 參數，跳過原本的 calendar/CP 選擇器 UI，
+所以 Akamai UI 改版時影響面較小。
+
+### 每週試算表 CSV
+
+預設執行（不帶 `--type`）會在跑完所有報表後 append 一 row 到 `output/weekly.csv`。
+欄位對應人工維護的週流量試算表：
+
+```
+年度 | 週期 | edge流量TB | origin流量TB | ID | TW | SG |
+v1流量TB | v3流量TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB
+```
+
+來源 report type → 欄位：
+- `summary` → edge流量TB, origin流量TB
+- `geography` → ID, TW, SG
+- `v3` / `trailer` / `tva` / `live` / `home` → 對應欄位（取 edge 值）
+- v1 目前固定 0（無對應 CP code）
+
+帶 `--type` 部分執行時不會 append CSV，避免 row 缺欄。
 
 ### Claude Code Skill
 

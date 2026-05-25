@@ -10,6 +10,16 @@ from scripts.config import AB_BIN, SESSION
 _global_opts: list[str] = []
 
 
+def _set_global_opts(opts: list[str]) -> None:
+    """Set global agent-browser options used by run_ab (state, headed, etc.).
+
+    Use when the browser daemon is opened outside init_browser (e.g. when the
+    caller keeps the browser open across login + report and uses --reuse-browser).
+    """
+    global _global_opts
+    _global_opts = list(opts)
+
+
 def exec_ab(*args: str) -> str:
     """Run agent-browser with session only (no global opts), return stdout."""
     cmd = [AB_BIN, '--session', SESSION, *args]

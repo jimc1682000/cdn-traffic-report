@@ -7,22 +7,32 @@ akamai_url: "https://control.akamai.com/apps/reports/"
 
 report_types:
   # Hostname report types — each runs on "Traffic by Hostname" page
-  # Key names are user-defined; geography is reserved for geo reports
-  report_a:
-    label: "Report A"
-    cp_codes: ["123456"]
-    unit: "TB"
-  report_b:
-    label: "Report B"
+  # Key names are user-defined; "geography" is reserved for geo reports.
+  # The weekly CSV writer (scripts/csv_writer.py) recognises these keys:
+  #   summary, v3, trailer, tva, live, home, geography
+  summary:
+    label: "Summary"
     cp_codes: ["ALL"]
     unit: "TB"
-  report_c:
-    label: "Report C"
-    cp_codes: ["789012"]
+  v3:
+    label: "v3"
+    cp_codes: ["111111", "222222"]
     unit: "TB"
-  report_d:
-    label: "Report D"
-    cp_codes: ["345678", "901234"]
+  trailer:
+    label: "Trailer/EPK"
+    cp_codes: ["333333"]
+    unit: "TB"
+  tva:
+    label: "TVA"
+    cp_codes: ["444444", "555555"]
+    unit: "GB"
+  live:
+    label: "Live"
+    cp_codes: ["666666"]
+    unit: "GB"
+  home:
+    label: "Home"
+    cp_codes: ["777777", "888888"]
     unit: "GB"
   # geography is a reserved key — runs on "Traffic by Geography" page
   geography:
