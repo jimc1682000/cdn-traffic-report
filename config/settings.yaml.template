@@ -5,6 +5,15 @@ browser:
 
 akamai_url: "https://control.akamai.com/apps/reports/"
 
+# Optional: 1Password auto-login for Akamai via the `op` CLI.
+# Values are item/account *references*, not secrets — the password and TOTP
+# are read at runtime by `op`. Set enabled: false (or omit this section) to
+# always use manual browser login instead.
+onepassword:
+  enabled: false
+  account: "YOUR_OP_ACCOUNT_ID_OR_EMAIL"
+  item: "YOUR_OP_ITEM_ID_OR_TITLE"
+
 report_types:
   # Hostname report types — each runs on "Traffic by Hostname" page
   # Key names are user-defined; "geography" is reserved for geo reports.

@@ -89,12 +89,22 @@ uv run python -m scripts.akamai_report --start 2026-01-25 --end 2026-01-31 --hea
 
 ### Session 管理
 
-Akamai session cookies 是 session-only（瀏覽器關閉即失效），需要定期刷新：
+Akamai session cookies 是 session-only（瀏覽器關閉即失效），無法靠 saved state 還原。
+流程：`refresh_session` 登入後**保持瀏覽器開啟**，交給 `akamai_report --reuse-browser` 接手，
+全部跑完用 `--close-when-done` 才關。
 
 ```bash
-uv run python -m scripts.refresh_session          # 自動檢測有效性
+uv run python -m scripts.refresh_session          # 預設 1Password op 自動登入（瀏覽器留開）
 uv run python -m scripts.refresh_session --force   # 強制重新登入
+uv run python -m scripts.refresh_session --manual  # 跳過 op，手動登入（輪詢頁面，非 TTY 也可用）
+
+# 接手跑報表，跑完關瀏覽器
+uv run python -m scripts.akamai_report --start <s> --end <e> --reuse-browser --close-when-done
 ```
+
+- **1Password 自動登入（預設）**：`config/settings.yaml` 的 `onepassword` 區塊填 op item/account
+  參照（非 secret）。`op` CLI 讀取帳號/密碼/TOTP 自動填入，secret 不進 log。
+- **手動 fallback**：op 不可用/失敗/`--manual` → 開 headed 瀏覽器並輪詢，等你手動登入完成。
 
 ## Key Conventions
 

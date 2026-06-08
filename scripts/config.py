@@ -62,6 +62,29 @@ REPORT_TYPES: dict[str, ReportConfig] = _build_report_types(_settings['report_ty
 
 
 @dataclass
+class OnePasswordConfig:
+    """1Password auto-login reference (op CLI). Values are item/account
+    references, not secrets — secrets are fetched at runtime via `op`."""
+
+    enabled: bool
+    account: str
+    item: str
+
+
+def _build_onepassword_config(raw: dict | None) -> OnePasswordConfig | None:
+    if not raw:
+        return None
+    return OnePasswordConfig(
+        enabled=bool(raw.get('enabled', False)),
+        account=raw.get('account', ''),
+        item=raw.get('item', ''),
+    )
+
+
+ONEPASSWORD_CONFIG: OnePasswordConfig | None = _build_onepassword_config(_settings.get('onepassword'))
+
+
+@dataclass
 class CloudFrontConfig:
     distribution_id: str
     region: str
