@@ -38,19 +38,27 @@ cp config/settings.yaml.template config/settings.yaml
 
 ### Session 管理（重要）
 
-Akamai 使用 httpOnly session cookies，而 `agent-browser --state` 載入時會過濾掉這些 cookies，
-導致 `refresh_session` 存的 state 在重啟瀏覽器後無法還原登入。**實際運作流程改為：
-保持瀏覽器開著、同 session 內跑報表**。
+Akamai session cookies 是 session-only：瀏覽器一關就失效，`agent-browser --state` 也無法還原登入態。
+**運作流程：登入一次後保持瀏覽器開著，同 session 內跑報表，全部跑完才關**。
+
+`refresh_session` 會開瀏覽器、登入、**保持開啟**，交給 `akamai_report --reuse-browser` 接手：
 
 ```bash
-# 1. 開 headed 瀏覽器，手動 SSO/MFA 登入
-agent-browser --session akamai-catchplay --headed open https://control.akamai.com/apps/reports/
+# 1. 登入（預設用 1Password op CLI 自動填帳號/密碼/TOTP；瀏覽器留開）
+uv run python -m scripts.refresh_session
 
-# 2. 看到 Reports page 後，於另一個 terminal 接著跑（不要關瀏覽器）
-uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reuse-browser
+# 2. 同 session 跑報表，跑完自動關瀏覽器
+uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 \
+    --reuse-browser --close-when-done
 ```
 
-`refresh_session.py` 仍保留以維護 state 檔，但目前不可單獨依賴它做後續執行。
+登入方式：
+
+- **1Password 自動登入（預設）**：`config/settings.yaml` 的 `onepassword` 區塊填 `op` item/account
+  參照（非 secret），`refresh_session` 會用 `op` 讀取帳密+TOTP 自動填入。
+- **手動 fallback**：`op` 不可用或 `--manual` 時，開 headed 瀏覽器後**輪詢頁面**直到你手動登入完成
+  （不再卡 `stdin`，非 TTY shell 也能用）。
+- `--force` 強制重登；`--manual` 跳過 op 走手動。
 
 ### 執行報表
 
@@ -66,6 +74,9 @@ uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reu
 
 # 停用每週 CSV append（預設 append 到 output/weekly.csv）
 uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reuse-browser --weekly-csv ""
+
+# 跑完所有報表後關閉 reuse 的瀏覽器
+uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reuse-browser --close-when-done
 ```
 
 報表透過 URL hash 直接帶 `cpcodes/start/end/timezone` 參數，跳過原本的 calendar/CP 選擇器 UI，
