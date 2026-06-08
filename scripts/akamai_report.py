@@ -163,6 +163,11 @@ def main():
         action='store_true',
         help='Assume browser already initialized + logged in; skip init_browser/close_browser',
     )
+    parser.add_argument(
+        '--close-when-done',
+        action='store_true',
+        help='Close the browser after all reports finish (use with --reuse-browser)',
+    )
     parser.add_argument('--output', help='Output JSON file path')
     parser.add_argument(
         '--weekly-csv',
@@ -237,6 +242,11 @@ def main():
             with open(golden_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
             print(f'Golden saved: {golden_path}')
+
+    # Close the reused browser once every report is done, if requested.
+    if args.close_when_done:
+        close_browser()
+        print('Browser closed.')
 
     return results
 
