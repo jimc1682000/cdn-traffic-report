@@ -139,7 +139,7 @@ Claude Code:
 | **設定驗證** | YAML 載入時驗證 | Pydantic model |
 | **Linting** | ruff | ruff + pre-commit |
 | **版本管理** | 無 | git-cliff + commitizen |
-| **架構決策紀錄** | 無 | 有（docs/adr/） |
+| **架構決策紀錄** | 有（docs/adr/） | 有（docs/adr/） |
 | **CI 流程** | 無 | Taskfile（`task ci`） |
 | **程式碼架構** | 功能模組拆分 | 依賴注入 + 斷路器 + 並發 |
 
