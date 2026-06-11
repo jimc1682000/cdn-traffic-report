@@ -3,7 +3,14 @@
 import pytest
 import yaml
 
-from scripts.config import _SETTINGS_FILE, CLOUDFRONT_CONFIG, REPORT_TYPES, _build_report_types, _validate_cp_codes
+from scripts.config import (
+    _SETTINGS_FILE,
+    CLOUDFRONT_CONFIG,
+    REPORT_TYPES,
+    _build_onepassword_config,
+    _build_report_types,
+    _validate_cp_codes,
+)
 
 
 def _load_raw_settings():
@@ -98,6 +105,20 @@ def test_labels_match_yaml():
     raw = _load_raw_settings()['report_types']
     for name, config in REPORT_TYPES.items():
         assert config.label == raw[name]['label'], f'{name} label mismatch'
+
+
+@pytest.mark.parametrize('raw', [None, {}])
+def test_onepassword_config_absent_returns_none(raw):
+    """No/empty onepassword section -> None (op path is skipped, manual login)."""
+    assert _build_onepassword_config(raw) is None
+
+
+def test_onepassword_config_built_from_section():
+    cfg = _build_onepassword_config({'enabled': True, 'account': 'ACC', 'item': 'ITEM'})
+    assert cfg is not None
+    assert cfg.enabled is True
+    assert cfg.account == 'ACC'
+    assert cfg.item == 'ITEM'
 
 
 def test_validate_cp_codes_rejects_non_numeric():
