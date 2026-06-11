@@ -125,6 +125,19 @@ def _op_totp(cfg) -> str:  # pragma: no cover
     return r.stdout.strip()
 
 
+def _eval_secret(js: str) -> None:  # pragma: no cover
+    """Run an eval whose JS embeds a secret.
+
+    On failure, CalledProcessError stringifies the full command — including the
+    embedded password/OTP — so never let it propagate. Re-raise a sanitized
+    error that carries no credential and no command line.
+    """
+    try:
+        exec_ab('eval', js)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f'browser eval failed (exit {e.returncode})') from None
+
+
 def _fill_react(selector: str, value: str) -> None:  # pragma: no cover
     """Set a React-controlled input via the native setter + input event."""
     sel, val = json.dumps(selector), json.dumps(value)
@@ -134,7 +147,7 @@ def _fill_react(selector: str, value: str) -> None:  # pragma: no cover
         'set.call(el, ' + val + '); el.dispatchEvent(new Event("input",{bubbles:true}));'
         'el.dispatchEvent(new Event("change",{bubbles:true})); return "ok";})()'
     )
-    exec_ab('eval', js)
+    _eval_secret(js)
 
 
 def _click_button(text: str) -> str:  # pragma: no cover
@@ -157,7 +170,7 @@ def _fill_totp(code: str) -> None:  # pragma: no cover
         'el.dispatchEvent(new KeyboardEvent("keyup",{bubbles:true,key:code[i]})); ok++;}'
         'return "filled:"+ok;})()'
     )
-    exec_ab('eval', js)
+    _eval_secret(js)
 
 
 def _op_login(cfg) -> bool:  # pragma: no cover
@@ -237,8 +250,9 @@ def refresh_session(force: bool = False, manual: bool = False) -> bool:  # pragm
     if not manual and cfg and cfg.enabled and _op_available():
         try:
             logged_in = _op_login(cfg)
-        except Exception as exc:  # noqa: BLE001 — fall back to manual on any op error
-            print(f'[session] 1Password login failed ({exc}); falling back to manual.')
+        except Exception:  # noqa: BLE001 — fall back to manual on any op error
+            # Do NOT print the exception: it may embed the command/credential.
+            print('[session] 1Password login failed; falling back to manual.')
             logged_in = False
 
     if not logged_in:

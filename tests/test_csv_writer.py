@@ -150,6 +150,58 @@ def test_append_blank_geo_cells_written_empty(tmp_path: Path):
     assert rows[0][COL_LIVE] == '0'
 
 
+_LEGACY_HEADER = [
+    '年度',
+    '週期',
+    'edge流量TB',
+    'origin流量TB',
+    'ID',
+    'TW',
+    'SG',
+    'v1流量TB',
+    'v3流量TB',
+    'Trailer/EPK',
+    'live流量GB',
+    'TVA流量GB',
+    'home流量GB',
+]
+
+
+def test_append_migrates_legacy_header(tmp_path: Path):
+    """Existing weekly.csv with old column names gets its header rewritten."""
+    csv_path = tmp_path / 'weekly.csv'
+    with open(csv_path, 'w', encoding='utf-8', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(_LEGACY_HEADER)
+        w.writerow(
+            [
+                '2026',
+                '05/24 - 05/30',
+                '191.86',
+                '66.56',
+                '166.39',
+                '24.51',
+                '0.01',
+                '0',
+                '165.35',
+                '26.08',
+                '0',
+                '70.15',
+                '219.78',
+            ]
+        )
+
+    append_weekly_row([_result('summary', {'edge': 100.0})], csv_path)
+
+    with open(csv_path, encoding='utf-8', newline='') as f:
+        rows = list(csv.reader(f))
+
+    assert rows[0] == SPREADSHEET_COLUMNS  # header migrated to new names
+    # Legacy data row preserved (column order unchanged).
+    assert rows[1][4] == '166.39'
+    assert len(rows) == 3  # header + legacy row + newly appended row
+
+
 def test_append_creates_parent_dir(tmp_path: Path):
     csv_path = tmp_path / 'nested' / 'dir' / 'weekly.csv'
     results = [_result('summary', {'edge': 1.0})]

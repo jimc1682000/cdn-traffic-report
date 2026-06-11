@@ -132,6 +132,27 @@ def flatten_results(results: list[dict]) -> dict:
     return {k: _fmt_num(v) for k, v in row.items()}
 
 
+def _migrate_legacy_header(csv_path: Path) -> None:
+    """Rewrite the header row in place if it predates the current column names.
+
+    Columns were renamed (e.g. 週期 → 'CDN 每周流量TB', edge流量TB → edge流量) but
+    the column *order* is unchanged, so existing data rows stay valid — only the
+    header line needs updating. Without this, appending to an existing
+    append-only weekly.csv would leave new rows under the legacy header and the
+    new SPREADSHEET_COLUMNS names would never appear.
+    """
+    with open(csv_path, encoding='utf-8', newline='') as f:
+        rows = list(csv.reader(f))
+    if not rows:
+        return
+    header = rows[0]
+    # Only migrate a real header row (both old/new start with 年度) that differs.
+    if header and header[0] == SPREADSHEET_COLUMNS[0] and header != SPREADSHEET_COLUMNS:
+        rows[0] = SPREADSHEET_COLUMNS
+        with open(csv_path, 'w', encoding='utf-8', newline='') as f:
+            csv.writer(f).writerows(rows)
+
+
 def append_weekly_row(results: list[dict], csv_path: Path) -> Path:
     """Append a flattened row to weekly.csv. Writes header on first creation."""
     csv_path = Path(csv_path)
@@ -139,6 +160,8 @@ def append_weekly_row(results: list[dict], csv_path: Path) -> Path:
 
     row = flatten_results(results)
     write_header = not csv_path.exists()
+    if not write_header:
+        _migrate_legacy_header(csv_path)
 
     with open(csv_path, 'a', encoding='utf-8', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=SPREADSHEET_COLUMNS)
