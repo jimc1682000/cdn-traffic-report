@@ -202,6 +202,20 @@ def test_append_migrates_legacy_header(tmp_path: Path):
     assert len(rows) == 3  # header + legacy row + newly appended row
 
 
+def test_append_to_empty_existing_file(tmp_path: Path):
+    """Existing but empty file: migration no-ops, append still writes a row."""
+    csv_path = tmp_path / 'weekly.csv'
+    csv_path.touch()  # exists, zero rows
+
+    append_weekly_row([_result('summary', {'edge': 1.0})], csv_path)
+
+    with open(csv_path, encoding='utf-8', newline='') as f:
+        rows = list(csv.reader(f))
+    # write_header was False (file existed) so no header is written; just the row.
+    assert len(rows) == 1
+    assert rows[0][0] == '2026'
+
+
 def test_append_creates_parent_dir(tmp_path: Path):
     csv_path = tmp_path / 'nested' / 'dir' / 'weekly.csv'
     results = [_result('summary', {'edge': 1.0})]
