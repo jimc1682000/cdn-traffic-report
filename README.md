@@ -148,7 +148,7 @@ Geography 報表包含國家明細：
 {
   "type": "geography",
   "traffic": {},
-  "geography": { "CC1": 9.87, "CC2": 2.10, "CC3": 0.03 },
+  "geography": { "CC1": 9.87, "CC2": 2.10, "CC3": 0.05 },
   "unit": "TB"
 }
 ```

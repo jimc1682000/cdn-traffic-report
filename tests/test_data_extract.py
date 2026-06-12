@@ -37,7 +37,7 @@ def test_parse_traffic_value_invalid(text):
     ('byte_count', 'expected'),
     [
         (9870000000000, 9.87),
-        (21000000000, 0.03),
+        (21000000000, 0.02),
         (0, 0.0),
         (1, 0.0),
     ],
