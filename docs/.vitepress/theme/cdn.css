@@ -126,9 +126,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-seri
 .lab-footer a{color:var(--text2);text-decoration:none}
 .lab-footer a:hover{color:var(--accent)}
 
+/* ─── problem callout ────────────────────────────── */
+.problem-card{border-left:3px solid var(--accent)}
+.problem-card p{font-size:.82rem;color:var(--text2);line-height:1.6;margin:0 0 .55rem}
+.problem-card p:last-of-type{margin-bottom:.75rem}
+.problem-link{font-size:.78rem;font-weight:600;color:var(--accent);text-decoration:none}
+.problem-link:hover{text-decoration:underline}
+
+/* ─── core highlights (prominent) ────────────────── */
+.core-item{position:relative;padding-top:1.4rem}
+.core-num{position:absolute;top:.9rem;right:1rem;font-size:.7rem;font-weight:700;width:1.4rem;height:1.4rem;line-height:1.4rem;text-align:center;border-radius:50%;background:var(--tag-bg);color:var(--tag-text)}
+.core-item h4{font-size:.95rem}
+.core-item p{font-size:.82rem}
+
+/* ─── extras (secondary, compact) ────────────────── */
+.extras-row{margin-top:1.1rem}
+.extras-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);display:block;margin-bottom:.5rem}
+.extras-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.6rem}
+.extra-item{font-size:.76rem;color:var(--text2);line-height:1.5;padding:.5rem .7rem;border:1px solid var(--border);border-radius:8px;background:var(--card)}
+.extra-item strong{color:var(--text);display:block;font-size:.78rem;margin-bottom:.15rem}
+
+/* ─── skill output table ─────────────────────────── */
+.out-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.out-table th,.out-table td{text-align:left;padding:.4rem .6rem;border-bottom:1px solid var(--border)}
+.out-table th{color:var(--text2);font-weight:600;text-transform:uppercase;font-size:.68rem;letter-spacing:.06em}
+.out-table td{color:var(--text);font-family:"SF Mono",Menlo,Consolas,monospace}
+.out-note{font-size:.7rem;color:var(--text2);margin:.6rem 0 0;font-style:italic}
+
+/* ─── defense desc ───────────────────────────────── */
+.defense-desc{font-size:.8rem;color:var(--text2);line-height:1.55;margin:0 0 .7rem}
+.defense-desc code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.74rem;background:var(--code-bg);color:var(--code-text);padding:.05rem .3rem;border-radius:4px}
+
 /* ─── responsive ─────────────────────────────────── */
 @media(max-width:640px){
   .lab-content{padding:1.5rem 1rem 3rem}
   .hero{padding:1.5rem .5rem 1.25rem}
-  .card-grid,.highlight-grid,.schema-grid{grid-template-columns:1fr}
+  .card-grid,.highlight-grid,.schema-grid,.extras-list{grid-template-columns:1fr}
 }
