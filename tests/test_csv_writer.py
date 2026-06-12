@@ -51,7 +51,7 @@ def test_flatten_all_known_types():
         _result('tva', {'edge': 4.10}),
         _result('live', {'edge': 0.0}),
         _result('home', {'edge': 10.50}),
-        _result('geography', geography={'ID': 9.87, 'TW': 2.10, 'SG': 0.03}),
+        _result('geography', geography={'ID': 9.87, 'TW': 2.10, 'SG': 0.05}),
     ]
     row = flatten_results(results)
 
@@ -61,7 +61,7 @@ def test_flatten_all_known_types():
     assert row[COL_ORIGIN] == 5.67
     assert row[COL_ID] == 9.87
     assert row[COL_TW] == 2.10
-    assert row[COL_SG] == 0.03
+    assert row[COL_SG] == 0.05
     assert row[COL_V1] == 0
     assert row[COL_V3] == 11.23
     assert row[COL_TRAILER] == 3.40
