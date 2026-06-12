@@ -107,7 +107,7 @@ class TestMockCpCodes:
         })()""")
         time.sleep(0.5)
         state = json.loads(ab_eval('window.__mockState'))
-        assert sorted(state['selectedCpCodes']) == ['100003', '100004', '100002', '100001']
+        assert sorted(state['selectedCpCodes']) == ['100001', '100002', '100003', '100004']
 
     def test_deselect_all(self, mock_browser):
         self._open_filter()

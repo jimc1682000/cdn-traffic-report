@@ -29,7 +29,7 @@ def parse_traffic_value(text: str) -> tuple[float, str]:
     Examples:
         "12.34 Terabytes" -> (12.34, "TB")
         "7.89 Gigabytes"  -> (7.89, "GB")
-        "56.78 %"          -> (56.78, "%")
+        "56.78 %"         -> (56.78, "%")
     """
     match = re.match(r'([\d,.]+)\s+(.+)', text.strip())
     if not match:
