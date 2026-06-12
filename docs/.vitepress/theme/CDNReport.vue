@@ -121,6 +121,14 @@ watch(theme, renderArch);
       </section>
 
       <section class="section reveal">
+        <div class="section-title"><span class="ico">🧩</span> 問題 / 為什麼用 Browser Automation</div>
+        <div class="card problem-card">
+          <p v-for="(line, i) in frontmatter.problem" :key="i">{{ line }}</p>
+          <a class="problem-link" href="https://github.com/jimc1682000/cdn-traffic-report/blob/main/COMPARISON.md" target="_blank" rel="noopener">讀 COMPARISON.md →</a>
+        </div>
+      </section>
+
+      <section class="section reveal">
         <div class="section-title"><span class="ico">🏗</span> 架構 / 資料流</div>
         <div class="card arch-wrap">
           <div v-if="archSvg" class="arch-mermaid" v-html="archSvg"></div>
@@ -132,11 +140,69 @@ watch(theme, renderArch);
       </section>
 
       <section class="section reveal">
-        <div class="section-title"><span class="ico">💡</span> 設計亮點</div>
-        <div class="highlight-grid">
-          <div class="highlight-item" v-for="h in frontmatter.highlights" :key="h.title">
+        <div class="section-title"><span class="ico">💡</span> 核心能力</div>
+        <div class="highlight-grid core-grid">
+          <div class="highlight-item core-item" v-for="(h, i) in frontmatter.core" :key="h.title">
+            <span class="core-num">{{ i + 1 }}</span>
             <h4>{{ h.title }}</h4>
             <p>{{ h.desc }}</p>
+          </div>
+        </div>
+        <div class="extras-row">
+          <span class="extras-label">其他亮點</span>
+          <div class="extras-list">
+            <div class="extra-item" v-for="e in frontmatter.extras" :key="e.title">
+              <strong>{{ e.title }}</strong>
+              <span>{{ e.desc }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal">
+        <div class="section-title"><span class="ico">🤖</span> Agent Skill 互動流程</div>
+        <div class="card-grid">
+          <div class="card">
+            <div class="code-label">使用者 ↔ Claude Code Agent</div>
+            <pre class="code-block"><span class="c"># 使用者只下一句 skill 指令</span>
+&gt; /cdn:cdn-report 2026-01-25 2026-01-31
+
+<span class="c"># Agent 自動執行：</span>
+  1. 讀 SKILL.md 取得指令模板
+  2. 跑 scripts.akamai_report --start … --end …
+  3. 讀 output/report_*.json
+  4. 依 SKILL.md 規則格式化
+  5. 回傳結構化表格</pre>
+          </div>
+          <div class="card">
+            <div class="code-label">Agent 回傳（示意）</div>
+            <table class="out-table">
+              <thead><tr><th>指標</th><th>流量</th></tr></thead>
+              <tbody>
+                <tr><td>Edge</td><td>12.34 TB</td></tr>
+                <tr><td>Origin</td><td>4.56 TB</td></tr>
+                <tr><td>Midgress</td><td>7.89 GB</td></tr>
+                <tr><td>Offload</td><td>56.78 %</td></tr>
+              </tbody>
+            </table>
+            <p class="out-note">數字為去識別化示意值，非真實流量。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal">
+        <div class="section-title"><span class="ico">🛡</span> 測試策略 / 防 UI 改版</div>
+        <div class="card-grid">
+          <div class="card">
+            <div class="code-label">第一層：Contract Check（對真實 UI）</div>
+            <p class="defense-desc">contract_check 用 <code>--save</code> 存下 DOM selector baseline，之後用 <code>--diff</code> 比對真實 Akamai UI；selector 失效時在改版當下就抓到，不會靜默產出空值。</p>
+            <pre class="code-block">uv run python -m scripts.contract_check --headed --save   <span class="c"># 存 baseline</span>
+uv run python -m scripts.contract_check --headed --diff   <span class="c"># 比對偵測改版</span></pre>
+          </div>
+          <div class="card">
+            <div class="code-label">第二層：Mock Integration（CI 離線）</div>
+            <p class="defense-desc">tests/mock_site/ 是假的 Akamai SPA（index.html + mock_data.js）。agent-browser 對它跑 integration test，驗證 DOM 擷取邏輯，不需真實帳密、CI 可離線重跑。</p>
+            <pre class="code-block">uv run pytest tests/test_mock_integration.py -v   <span class="c"># 離線跑 agent-browser</span></pre>
           </div>
         </div>
       </section>
@@ -165,7 +231,7 @@ watch(theme, renderArch);
   "traffic": {
     "edge":     12.34,
     "origin":    4.56,
-    "offload":   56.78
+    "offload":  56.78
   },
   "unit": "TB"
 }</pre>
@@ -175,9 +241,9 @@ watch(theme, renderArch);
             <pre class="code-block">{
   "type": "geography",
   "geography": {
-    "TW":  9.87,
+    "TW":   9.87,
     "SG":   2.10,
-    "ID":    0.03
+    "ID":   0.05
   },
   "unit": "TB"
 }</pre>
