@@ -24,7 +24,7 @@ extras:
   - title: URL Hash 參數化
     desc: 用 URL hash 帶 cpcodes / start / end / timezone，跳過 calendar 與 CP 選擇器 UI，縮小改版影響面（SPA 自動化的延伸）。
   - title: 週報 CSV 自動化
-    desc: 每次完整執行後自動 append 一行到 weekly.csv，欄位對應人工維護的週流量試算表，省去手動抄寫。
+    desc: 每次完整執行後自動 append 一行到 weekly.csv，欄位對應人工維護的週流量試算表（含 CloudFront LIVETV raw bytes），省去手動抄寫。
 cmds:
   - label: "Step 1: Session 登入"
     code: "uv run python -m scripts.refresh_session"

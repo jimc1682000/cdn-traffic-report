@@ -35,7 +35,23 @@ Generate traffic reports from Akamai Control Center and AWS CloudFront.
    uv run python -m scripts.akamai_report --start <start_date> --end <end_date> [--type <type>] [--headed]
    ```
 3. Read the output JSON file from `output/report_<start>_<end>.json`
-4. Present the results in a formatted table:
+4. Present the results in a formatted table.
+
+**Spreadsheet fill-in (default when the user is filling the weekly sheet):**
+
+Akamai week is UTC+0 + `cpcodes=all` (do not switch to UTC+8, do not subtract home/test). Always include CloudFront. **LIVETV is CloudFront BytesDownloaded raw bytes, never Akamai `live`.**
+
+Output one paste-ready row matching `weekly.csv` columns, then CloudFront daily raw bytes:
+
+| 年度 | CDN 每周流量TB | edge流量 | origin流量 | ID | TW | SG | v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB | LIVETV流量 |
+|------|----------------|----------|------------|----|----|----|-----------|-----------|-------------|------------|------------|------------|------------|
+| YYYY | MM/DD - MM/DD | … | … | … | … | … | 0 | … | … | … | … | … | sum(daily_bytes) |
+
+CloudFront daily (raw bytes, UTC+8 days):
+
+| Date | Bytes Downloaded |
+|------|------------------|
+| MM/DD | {bytes} |
 
 **For Akamai hostname reports:**
 

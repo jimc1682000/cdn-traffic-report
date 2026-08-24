@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- ADR-0002: weekly Akamai stays UTC+0 `cpcodes=all`; spreadsheet LIVETV is CloudFront raw bytes
+- `weekly.csv` column `LIVETV流量` (sum of CloudFront `daily_bytes`)
+
+### Changed
+- Skill / README / CLAUDE.md: fill-in output must include CloudFront; do not map LIVETV to Akamai `live`
+
 ## [1.1.0] - 2026-02-10
 
 ### Added

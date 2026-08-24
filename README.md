@@ -88,15 +88,20 @@ uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reu
 欄位對應人工維護的週流量試算表：
 
 ```
-年度 | 週期 | edge流量TB | origin流量TB | ID | TW | SG |
-v1流量TB | v3流量TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB
+年度 | CDN 每周流量TB | edge流量 | origin流量 | ID | TW | SG |
+v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB |
+LIVETV流量
 ```
 
 來源 report type → 欄位：
-- `summary` → edge流量TB, origin流量TB
+- `summary` → edge流量, origin流量（Akamai UTC+0、`cpcodes=all`，見 [ADR-0002](docs/adr/0002-weekly-utc0-all-and-cloudfront-livetv.md)）
 - `geography` → ID, TW, SG
 - `v3` / `trailer` / `tva` / `live` / `home` → 對應欄位（取 edge 值）
+- `live流量GB` 是 Akamai live CP，不是 CloudFront
+- `LIVETV流量` → CloudFront `BytesDownloaded` 該週 raw bytes 加總（日切 UTC+8）
 - v1 目前固定 0（無對應 CP code）
+
+填表時必須帶出 LIVETV（週合計 + 逐日 raw bytes），不要把 LIVETV 填成 Akamai live 的 0。
 
 帶 `--type` 部分執行時不會 append CSV，避免 row 缺欄。
 
