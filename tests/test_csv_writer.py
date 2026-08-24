@@ -8,6 +8,7 @@ from scripts.csv_writer import (
     COL_HOME,
     COL_ID,
     COL_LIVE,
+    COL_LIVETV,
     COL_ORIGIN,
     COL_PERIOD,
     COL_SG,
@@ -52,6 +53,11 @@ def test_flatten_all_known_types():
         _result('live', {'edge': 0.0}),
         _result('home', {'edge': 10.50}),
         _result('geography', geography={'ID': 9.87, 'TW': 2.10, 'SG': 0.05}),
+        {
+            'date_range': {'start': '2026-05-03', 'end': '2026-05-09'},
+            'type': 'cloudfront',
+            'daily_bytes': {'05/03': 100, '05/04': 250},
+        },
     ]
     row = flatten_results(results)
 
@@ -68,6 +74,7 @@ def test_flatten_all_known_types():
     assert row[COL_LIVE] == 0  # 0.0 -> 0 (integral float collapsed)
     assert row[COL_TVA] == 4.10
     assert row[COL_HOME] == 10.50
+    assert row[COL_LIVETV] == 350
 
 
 def test_geo_columns_blank_when_geo_data_absent():
@@ -79,6 +86,7 @@ def test_geo_columns_blank_when_geo_data_absent():
     assert row[COL_ORIGIN] == 50
     for col in GEO_COLUMNS:
         assert row[col] == '', f'{col} should be blank when geo absent'
+    assert row[COL_LIVETV] == '', 'LIVETV should be blank when cloudfront absent'
     # Non-geo missing types remain 0 (legacy v1, genuine zeros).
     for col in (COL_V1, COL_V3, COL_TRAILER, COL_LIVE, COL_TVA, COL_HOME):
         assert row[col] == 0, f'{col} should default to 0'
@@ -109,6 +117,19 @@ def test_integral_float_collapsed_but_decimals_kept():
     assert row[COL_EDGE] == 5
     assert isinstance(row[COL_EDGE], int)
     assert row[COL_ORIGIN] == 66.56
+
+
+def test_cloudfront_blank_when_daily_bytes_empty():
+    """CloudFront ran but daily_bytes empty -> 0 (sum of nothing), still present."""
+    results = [
+        {
+            'date_range': {'start': '2026-05-03', 'end': '2026-05-09'},
+            'type': 'cloudfront',
+            'daily_bytes': {},
+        }
+    ]
+    row = flatten_results(results)
+    assert row[COL_LIVETV] == 0
 
 
 def test_flatten_unknown_type_ignored():
@@ -148,6 +169,7 @@ def test_append_blank_geo_cells_written_empty(tmp_path: Path):
     assert rows[0][COL_TW] == ''
     assert rows[0][COL_SG] == ''
     assert rows[0][COL_LIVE] == '0'
+    assert rows[0][COL_LIVETV] == ''
 
 
 _LEGACY_HEADER = [
@@ -237,5 +259,6 @@ def test_empty_results_returns_zero_row():
     assert row[COL_PERIOD] == 0
     for col in GEO_COLUMNS:
         assert row[col] == ''
+    assert row[COL_LIVETV] == ''
     for col in (COL_EDGE, COL_ORIGIN, COL_V1, COL_V3, COL_TRAILER, COL_LIVE, COL_TVA, COL_HOME):
         assert row[col] == 0
