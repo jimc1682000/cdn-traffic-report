@@ -3,7 +3,8 @@ manual tracking spreadsheet.
 
 Spreadsheet columns (left to right, header text matches the sheet for paste-in):
     年度 | CDN 每周流量TB | edge流量 | origin流量 | ID | TW | SG |
-    v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB
+    v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB |
+    LIVETV流量
 
 Mapping rules:
 - 年度           : YYYY from start_date
@@ -14,9 +15,10 @@ Mapping rules:
 - v1流量 TB      : fixed 0 (legacy, no CP code yet)
 - v3流量 TB      : v3.traffic.edge           (TB)
 - Trailer/EPK    : trailer.traffic.edge      (configured unit)
-- live流量GB     : live.traffic.edge         (GB)
+- live流量GB     : live.traffic.edge         (GB) — Akamai CP, not CloudFront
 - TVA流量GB      : tva.traffic.edge          (GB)
 - home流量GB     : home.traffic.edge         (GB)
+- LIVETV流量     : sum(cloudfront.daily_bytes) raw bytes — blank when CF absent
 
 Number formatting: integral floats are written without the trailing ".0"
 (e.g. 0.0 -> 0), while genuine decimals are preserved (e.g. 0.01 stays 0.01).
@@ -42,6 +44,7 @@ COL_TRAILER = 'Trailer/EPK'
 COL_LIVE = 'live流量GB'
 COL_TVA = 'TVA流量GB'
 COL_HOME = 'home流量GB'
+COL_LIVETV = 'LIVETV流量'
 
 SPREADSHEET_COLUMNS = [
     COL_YEAR,
@@ -57,10 +60,13 @@ SPREADSHEET_COLUMNS = [
     COL_LIVE,
     COL_TVA,
     COL_HOME,
+    COL_LIVETV,
 ]
 
 # Geography columns are left blank (not 0) when no geo data is available.
 GEO_COLUMNS = (COL_ID, COL_TW, COL_SG)
+# CloudFront LIVETV is blank when the cloudfront report was not in the run.
+BLANK_WHEN_ABSENT = (*GEO_COLUMNS, COL_LIVETV)
 
 _EDGE_BY_TYPE = {
     'summary': (COL_EDGE, COL_ORIGIN),
@@ -95,8 +101,8 @@ def _fmt_num(v):
 def flatten_results(results: list[dict]) -> dict:
     """Build a single row dict keyed by SPREADSHEET_COLUMNS from per-report results."""
     row = dict.fromkeys(SPREADSHEET_COLUMNS, 0)
-    # Geo columns stay blank unless real country data shows up.
-    for col in GEO_COLUMNS:
+    # Geo / LIVETV stay blank unless that report actually ran.
+    for col in BLANK_WHEN_ABSENT:
         row[col] = ''
 
     start_date = end_date = None
@@ -128,6 +134,10 @@ def flatten_results(results: list[dict]) -> dict:
             for country in GEO_COLUMNS:
                 if country in geo:
                     row[country] = geo[country]
+
+        if rtype == 'cloudfront':
+            daily = r.get('daily_bytes') or {}
+            row[COL_LIVETV] = sum(daily.values())
 
     return {k: _fmt_num(v) for k, v in row.items()}
 

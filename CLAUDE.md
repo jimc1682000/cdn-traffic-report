@@ -109,7 +109,9 @@ uv run python -m scripts.akamai_report --start <s> --end <e> --reuse-browser --c
 ## Key Conventions
 
 - Settings are in `config/settings.yaml`, not hardcoded in Python
-- Dates are UTC+8 (Taiwan), converted to UTC for CloudWatch API
+- Akamai 週報日期窗是 UTC+0（URL `timezone=Greenwich`），`summary` 用 `cpcodes=all`；不要改成 UTC+8，也不要從 edge 扣 home/test（[ADR-0002](docs/adr/0002-weekly-utc0-all-and-cloudfront-livetv.md)）
+- CloudFront 日切是 UTC+8，再轉 UTC 打 CloudWatch。試算表 **LIVETV流量** 是 CloudFront BytesDownloaded raw bytes，不是 Akamai `live`
+- 完整週報填表必須含 CloudFront 週合計與逐日 raw bytes
 - Browser automation uses `agent-browser` CLI via subprocess
 - Pure logic functions are unit-testable; browser functions require agent-browser
 - Use `uv` for dependency management (not pip)
