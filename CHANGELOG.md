@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Skill / README / CLAUDE.md: fill-in output must include CloudFront; do not map LIVETV to Akamai `live`
 
+### Removed
+- Legacy `.github/workflows/auto-merge.yml` (GITHUB_TOKEN cannot approve PRs; failed check blocked repo-policy automerge)
+
 ## [1.1.0] - 2026-02-10
 
 ### Added
