@@ -6,12 +6,13 @@ Requires: agent-browser binary available on PATH or configured in settings.yaml.
 
 import json
 import time
+from datetime import UTC, datetime
 
 import pytest
 
 from scripts.browser_helpers import ab_eval, run_ab
 from scripts.calendar_nav import get_displayed_months
-from scripts.data_extract import bytes_to_tb, extract_geography_table, extract_traffic_cards
+from scripts.data_extract import bytes_to_tb, extract_data_ends, extract_geography_table, extract_traffic_cards
 
 pytestmark = pytest.mark.integration
 
@@ -52,6 +53,11 @@ class TestMockDataExtract:
         assert geo['ID'] == bytes_to_tb(9_870_000_000_000)
         assert geo['TW'] == bytes_to_tb(21_000_000_000)
         assert geo['SG'] == bytes_to_tb(3_400_000_000)
+
+    def test_extract_data_ends(self, mock_browser):
+        ab_eval("window.location.hash = '#/predefined/traffic-by-geography'")
+        time.sleep(1)
+        assert extract_data_ends() == datetime(2026, 10, 23, 6, 0, tzinfo=UTC)
 
 
 # ---------------------------------------------------------------------------

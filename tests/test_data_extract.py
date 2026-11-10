@@ -1,8 +1,17 @@
 """Tests for data_extract module."""
 
+from datetime import UTC, datetime
+
 import pytest
 
-from scripts.data_extract import build_report_output, bytes_to_tb, convert_unit, parse_traffic_value
+from scripts.data_extract import (
+    build_report_output,
+    bytes_to_tb,
+    convert_unit,
+    is_window_complete,
+    parse_data_ends,
+    parse_traffic_value,
+)
 
 
 @pytest.mark.parametrize(
@@ -198,3 +207,31 @@ def test_build_report_output_none_geography_excluded():
         unit='TB',
     )
     assert 'geography' not in output
+
+
+def test_parse_data_ends_live_akamai_text():
+    # innerText as rendered by Akamai: label and value on separate lines.
+    text = 'Edge bytes by country/area\nAvailable data ends:\nOctober 23, 2026, 6:00 AM (UTC +00:00)\nItems:\n54'
+    assert parse_data_ends(text) == datetime(2026, 10, 23, 6, 0, tzinfo=UTC)
+
+
+def test_parse_data_ends_converts_offset_to_utc():
+    text = 'Available data ends: October 23, 2026, 2:00 PM (UTC +08:00)'
+    assert parse_data_ends(text) == datetime(2026, 10, 23, 6, 0, tzinfo=UTC)
+
+
+def test_parse_data_ends_missing_note():
+    assert parse_data_ends('Traffic by Geography') is None
+
+
+@pytest.mark.parametrize(
+    ('data_ends', 'complete'),
+    [
+        (datetime(2026, 10, 23, 6, 0, tzinfo=UTC), False),
+        (datetime(2026, 10, 24, 23, 0, tzinfo=UTC), False),
+        (datetime(2026, 10, 25, 0, 0, tzinfo=UTC), True),
+        (datetime(2026, 10, 27, 6, 0, tzinfo=UTC), True),
+    ],
+)
+def test_is_window_complete(data_ends, complete):
+    assert is_window_complete(data_ends, '2026-10-24') is complete

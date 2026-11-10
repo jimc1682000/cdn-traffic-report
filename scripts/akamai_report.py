@@ -7,14 +7,16 @@ import time
 from pathlib import Path
 
 from scripts.browser_helpers import ab_eval, ab_screenshot, close_browser, init_browser
-from scripts.cloudfront import fetch_cloudfront_bytes
+from scripts.cloudfront import fetch_cloudfront_bytes, livetv_window
 from scripts.config import AKAMAI_URL, CLOUDFRONT_CONFIG, REPORT_TYPES, STATE_FILE
-from scripts.csv_writer import append_weekly_row
+from scripts.csv_writer import append_weekly_row, format_paste_blocks
 from scripts.data_extract import (
     build_report_output,
     convert_unit,
+    extract_data_ends,
     extract_geography_table,
     extract_traffic_cards,
+    is_window_complete,
 )
 
 # Force unbuffered print so logs appear in real-time
@@ -113,13 +115,14 @@ def run_geography_report(start_date: str, end_date: str) -> dict:
     # Extract geography data
     print('[geography] Extracting geography data...')
     geography = extract_geography_table(config.geo_countries)
+    data_ends = extract_data_ends()
 
     # Take screenshot
     screenshot_path = str(OUTPUT_DIR / f'geography_{start_date}_{end_date}.png')
     ab_screenshot(screenshot_path)
     print(f'[geography] Screenshot: {screenshot_path}')
 
-    return build_report_output(
+    output = build_report_output(
         report_type='geography',
         label=config.label,
         start_date=start_date,
@@ -128,6 +131,17 @@ def run_geography_report(start_date: str, end_date: str) -> dict:
         unit=config.unit,
         geography=geography,
     )
+    # Akamai geo data lags hostname data by days; partial numbers must not be filled in.
+    if data_ends is None:
+        print('[geography] WARNING: "Available data ends" note not found; completeness unknown')
+    else:
+        output['data_ends'] = data_ends.strftime('%Y-%m-%dT%H:%M:%SZ')
+        output['data_complete'] = is_window_complete(data_ends, end_date)
+        if not output['data_complete']:
+            print(
+                f'[geography] WARNING: data ends {output["data_ends"]}, before {end_date} 23:59 UTC; ID/TW/SG left blank'
+            )
+    return output
 
 
 def run_cloudfront_report(start_date: str, end_date: str) -> dict:
@@ -175,6 +189,8 @@ def main():
         help='Path to weekly CSV (append-only); pass empty string to disable',
     )
     parser.add_argument('--save-golden', action='store_true', help='Save each result as golden data in tests/golden/')
+    parser.add_argument('--livetv-start', help='CloudFront start date (UTC+8); default --start + 1 day in a full run')
+    parser.add_argument('--livetv-end', help='CloudFront end date (UTC+8); default --end + 1 day in a full run')
     args = parser.parse_args()
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -211,9 +227,11 @@ def main():
             if not args.reuse_browser:
                 close_browser()
 
-    # Run CloudFront (no browser needed)
+    # Run CloudFront (no browser needed). A full weekly run fills the LiveTV tabs,
+    # whose window is one day later than the Akamai week; --type cloudfront keeps the given dates.
     if run_cf:
-        result = run_cloudfront_report(args.start, args.end)
+        cf_start, cf_end = livetv_window(args.start, args.end) if args.type is None else (args.start, args.end)
+        result = run_cloudfront_report(args.livetv_start or cf_start, args.livetv_end or cf_end)
         results.append(result)
         print(json.dumps(result, ensure_ascii=False, indent=2))
 
@@ -232,6 +250,9 @@ def main():
         print(f'Weekly CSV row appended: {csv_path}')
     elif args.weekly_csv and args.type is not None:
         print('Skipping weekly CSV: --type given (partial run)')
+
+    if args.type is None:
+        print('\n' + format_paste_blocks(results))
 
     # Save golden data (one file per report type)
     if args.save_golden:

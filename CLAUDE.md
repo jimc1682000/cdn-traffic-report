@@ -109,9 +109,11 @@ uv run python -m scripts.akamai_report --start <s> --end <e> --reuse-browser --c
 ## Key Conventions
 
 - Settings are in `config/settings.yaml`, not hardcoded in Python
+- **這個 repo 是 public**：測試、文件、docstring、commit message 一律用假數字，不寫真實流量、CloudFront bytes 或 CP code。pre-commit 的 `no-real-report-data`（`scripts/check_real_data.py`）會比對本機 `config/settings.yaml`、`output/`、`tests/golden/report_*.json` 擋下真實值（commit message 由 `no-real-report-data-msg` 檢查）
 - Akamai 週報日期窗是 UTC+0（URL `timezone=Greenwich`），`summary` 用 `cpcodes=all`；不要改成 UTC+8，也不要從 edge 扣 home/test（[ADR-0002](docs/adr/0002-weekly-utc0-all-and-cloudfront-livetv.md)）
-- CloudFront 日切是 UTC+8，再轉 UTC 打 CloudWatch。試算表 **LIVETV流量** 是 CloudFront BytesDownloaded raw bytes，不是 Akamai `live`
-- 完整週報填表必須含 CloudFront 週合計與逐日 raw bytes
+- CloudFront 日切是 UTC+8，再轉 UTC 打 CloudWatch。LiveTV 是 CloudFront BytesDownloaded 每日 raw bytes，填進試算表 `LiveTV` / `LiveTV monthy` 分頁，不是 Akamai `live`；完整週報的 CloudFront 窗是 Akamai 週往後一天（[ADR-0003](docs/adr/0003-livetv-daily-tabs-and-doc-paste-rows.md)）
+- `weekly.csv` 只到 `home流量GB`（試算表 A:M），N 欄起是 BI，不要加回 LIVETV 欄
+- Geography 頁面的 `Available data ends` 早於週末時，ID/TW/SG 留空，等資料補完再跑 `--type geography`
 - Browser automation uses `agent-browser` CLI via subprocess
 - Pure logic functions are unit-testable; browser functions require agent-browser
 - Use `uv` for dependency management (not pip)
