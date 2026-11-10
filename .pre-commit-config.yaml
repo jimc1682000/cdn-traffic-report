@@ -11,3 +11,18 @@ repos:
     hooks:
       - id: betterleaks
         args: [--max-archive-depth, "3"]
+
+  - repo: local
+    hooks:
+      - id: no-real-report-data
+        name: Block real report values (public repo)
+        entry: uv run python -m scripts.check_real_data
+        language: system
+        types: [text]
+        exclude: '(^|/)(uv\.lock|package-lock\.json)$'
+        stages: [pre-commit]
+      - id: no-real-report-data-msg
+        name: Block real report values in commit message
+        entry: uv run python -m scripts.check_real_data --commit-msg
+        language: system
+        stages: [commit-msg]

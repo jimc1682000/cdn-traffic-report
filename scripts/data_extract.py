@@ -2,6 +2,7 @@
 
 import json
 import re
+from datetime import UTC, datetime, timedelta
 
 from scripts.browser_helpers import ab_eval
 
@@ -126,6 +127,35 @@ def extract_geography_table(countries: list[str]) -> dict[str, float]:  # pragma
             raw_bytes = int(data[country].replace(',', ''))
             result[country] = bytes_to_tb(raw_bytes)
     return result
+
+
+def parse_data_ends(text: str) -> datetime | None:
+    """Parse Akamai's "Available data ends:" note into an aware datetime.
+
+    Example: "Available data ends: October 23, 2026, 6:00 AM (UTC +00:00)"
+    Returns None when the note is not in the text.
+    """
+    match = re.search(
+        r'Available data ends:\s*([A-Z][a-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M)\s*\(UTC ([+-])(\d{2}):(\d{2})\)',
+        text,
+    )
+    if not match:
+        return None
+    sign = 1 if match.group(2) == '+' else -1
+    offset = timedelta(hours=int(match.group(3)), minutes=int(match.group(4))) * sign
+    local = datetime.strptime(match.group(1), '%B %d, %Y, %I:%M %p')
+    return (local - offset).replace(tzinfo=UTC)
+
+
+def is_window_complete(data_ends: datetime, end_date: str) -> bool:
+    """True when Akamai has data through the end of end_date (UTC, the report's timezone)."""
+    window_end = datetime.strptime(end_date, '%Y-%m-%d').replace(tzinfo=UTC) + timedelta(days=1)
+    return data_ends >= window_end
+
+
+def extract_data_ends() -> datetime | None:  # pragma: no cover
+    """Read the "Available data ends" note from the rendered report page."""
+    return parse_data_ends(json.loads(ab_eval('document.body.innerText')))
 
 
 def build_report_output(

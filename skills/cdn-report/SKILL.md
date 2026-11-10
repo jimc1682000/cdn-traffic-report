@@ -39,19 +39,15 @@ Generate traffic reports from Akamai Control Center and AWS CloudFront.
 
 **Spreadsheet fill-in (default when the user is filling the weekly sheet):**
 
-Akamai week is UTC+0 + `cpcodes=all` (do not switch to UTC+8, do not subtract home/test). Always include CloudFront. **LIVETV is CloudFront BytesDownloaded raw bytes, never Akamai `live`.**
+Akamai week is UTC+0 + `cpcodes=all` (do not switch to UTC+8, do not subtract home/test). Always include CloudFront. **LiveTV is CloudFront BytesDownloaded daily raw bytes, never Akamai `live`.** A full run fetches CloudFront for the Akamai week shifted one day later (Sun–Sat → Mon–Sun).
 
-Output one paste-ready row matching `weekly.csv` columns, then CloudFront daily raw bytes:
+A full run prints three tab-separated paste blocks at the end of its log; relay them as-is:
 
-| 年度 | CDN 每周流量TB | edge流量 | origin流量 | ID | TW | SG | v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB | LIVETV流量 |
-|------|----------------|----------|------------|----|----|----|-----------|-----------|-------------|------------|------------|------------|------------|
-| YYYY | MM/DD - MM/DD | … | … | … | … | … | 0 | … | … | … | … | … | sum(daily_bytes) |
+1. Sheet `weekly` A:M (13 columns, insert at row 2). Columns N+ are BI — never add a LIVETV column.
+2. Doc weekly table (10 columns: period, edge, ID, TW, SG, v3, Trailer/EPK, live, TVA, Home).
+3. Sheet `LiveTV` / `LiveTV monthy` A:B: `YYYY-MM-DD<TAB>raw bytes` per UTC+8 day; columns C/D are formulas to extend.
 
-CloudFront daily (raw bytes, UTC+8 days):
-
-| Date | Bytes Downloaded |
-|------|------------------|
-| MM/DD | {bytes} |
+If the log shows `[geography] WARNING: data ends ...`, ID/TW/SG are blank on purpose: Akamai geo data lags. Tell the user and re-run `--type geography` later. After the sheet is updated, the two linked LiveTV charts in the Doc need 「工具 → 已連結的物件 → 全部更新」.
 
 **For Akamai hostname reports:**
 

@@ -1,6 +1,6 @@
 """Tests for cloudfront module."""
 
-from scripts.cloudfront import aggregate_hourly_to_daily, build_metric_query, convert_dates_to_utc
+from scripts.cloudfront import aggregate_hourly_to_daily, build_metric_query, convert_dates_to_utc, livetv_window
 
 
 def test_convert_dates_to_utc():
@@ -185,3 +185,12 @@ def test_fetch_cloudfront_bytes_success(mocker):
     result = fetch_cloudfront_bytes('DIST123', '2026-01-25', '2026-01-31')
     # 16:00 UTC = 00:00 Jan 26 UTC+8, 17:00 UTC = 01:00 Jan 26 UTC+8
     assert result == {'01/26': 3000}
+
+
+def test_livetv_window_shifts_week_by_one_day():
+    """Akamai week 10/18-10/24 (Sun-Sat) fills LiveTV 10/19-10/25 (Mon-Sun)."""
+    assert livetv_window('2026-10-18', '2026-10-24') == ('2026-10-19', '2026-10-25')
+
+
+def test_livetv_window_crosses_year_end():
+    assert livetv_window('2026-12-27', '2026-12-31') == ('2026-12-28', '2027-01-01')

@@ -10,11 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - ADR-0002: weekly Akamai stays UTC+0 `cpcodes=all`; spreadsheet LIVETV is CloudFront raw bytes
 - `weekly.csv` column `LIVETV流量` (sum of CloudFront `daily_bytes`)
+- ADR-0003: LiveTV goes into the daily `LiveTV` / `LiveTV monthy` sheet tabs; full runs print paste blocks for the sheet, the weekly Doc table and the LiveTV tabs
+- Geography reads Akamai's `Available data ends` note and leaves ID/TW/SG blank when the week is not fully available
+- `--livetv-start` / `--livetv-end` to override the CloudFront window of a full run
+- pre-commit hook `no-real-report-data` (`scripts/check_real_data.py`): blocks staged lines that repeat real traffic values, CP codes or the distribution id from local untracked data
 
 ### Changed
 - Skill / README / CLAUDE.md: fill-in output must include CloudFront; do not map LIVETV to Akamai `live`
+- Full runs fetch CloudFront for the Akamai week shifted one day later (Mon–Sun)
 
 ### Removed
+- `weekly.csv` column `LIVETV流量`: the sheet's column N is BI data, so the row now stops at `home流量GB`
 - Legacy `.github/workflows/auto-merge.yml` (GITHUB_TOKEN cannot approve PRs; failed check blocked repo-policy automerge)
 
 ## [1.1.0] - 2026-02-10

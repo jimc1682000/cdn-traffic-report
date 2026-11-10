@@ -89,19 +89,27 @@ uv run python -m scripts.akamai_report --start 2026-05-10 --end 2026-05-16 --reu
 
 ```
 年度 | CDN 每周流量TB | edge流量 | origin流量 | ID | TW | SG |
-v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB |
-LIVETV流量
+v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB
 ```
+
+這 13 欄就是試算表 `weekly` 分頁的 A:M，N 欄起是 BI 欄位，不在輸出範圍內。
 
 來源 report type → 欄位：
 - `summary` → edge流量, origin流量（Akamai UTC+0、`cpcodes=all`，見 [ADR-0002](docs/adr/0002-weekly-utc0-all-and-cloudfront-livetv.md)）
-- `geography` → ID, TW, SG
+- `geography` → ID, TW, SG（頁面 `Available data ends` 早於週末 23:59 UTC 時留空）
 - `v3` / `trailer` / `tva` / `live` / `home` → 對應欄位（取 edge 值）
 - `live流量GB` 是 Akamai live CP，不是 CloudFront
-- `LIVETV流量` → CloudFront `BytesDownloaded` 該週 raw bytes 加總（日切 UTC+8）
 - v1 目前固定 0（無對應 CP code）
 
-填表時必須帶出 LIVETV（週合計 + 逐日 raw bytes），不要把 LIVETV 填成 Akamai live 的 0。
+跑完後會印出三段 tab 分隔的貼上區塊（見 [ADR-0003](docs/adr/0003-livetv-daily-tabs-and-doc-paste-rows.md)）：
+
+1. 試算表 `weekly` A:M，插在第 2 列
+2. 週報 Doc 的週流量表（10 欄：週、edge、ID、TW、SG、v3、Trailer/EPK、live、TVA、Home）
+3. 試算表 `LiveTV` / `LiveTV monthy` 的 A:B：CloudFront `BytesDownloaded` 每日 raw bytes（日切 UTC+8），C、D 欄的公式往下延伸
+
+完整週報的 CloudFront 窗是 Akamai 週往後一天（例如 10/18–10/24 → 10/19–10/25），可用
+`--livetv-start` / `--livetv-end` 覆寫。週報 Doc 的兩張 LiveTV 圖連結試算表，貼完要在 Doc 按
+「工具 → 已連結的物件 → 全部更新」。
 
 帶 `--type` 部分執行時不會 append CSV，避免 row 缺欄。
 
@@ -193,6 +201,8 @@ uv run pytest tests/test_mock_integration.py -v
 # Lint
 uv run ruff check scripts/ tests/
 ```
+
+這個 repo 是公開的，測試與文件請用假數字。pre-commit 的 `no-real-report-data` hook 會讀本機未追蹤的 `config/settings.yaml`、`output/`、`tests/golden/report_*.json`，staged 內容出現同樣的流量數字、CP code 或 distribution id 就擋下 commit，commit message 也會檢查。請先跑 `pre-commit install --hook-type pre-commit --hook-type commit-msg`。
 
 ### Contract Check
 

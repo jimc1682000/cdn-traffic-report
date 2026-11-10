@@ -8,4 +8,5 @@ Alternatives 與 Consequences。格式見 [`template.md`](template.md)。
 | # | 標題 | 狀態 | 日期 |
 |---|------|------|------|
 | [0001](0001-akamai-session-login-and-reuse.md) | Akamai Session 登入與瀏覽器重用策略 | Accepted | 2026-06-11 |
-| [0002](0002-weekly-utc0-all-and-cloudfront-livetv.md) | 週報 UTC+0 ALL，LIVETV 用 CloudFront raw bytes | Accepted | 2026-08-24 |
+| [0002](0002-weekly-utc0-all-and-cloudfront-livetv.md) | 週報 UTC+0 ALL，LIVETV 用 CloudFront raw bytes | Accepted（Decision 2、3 由 0003 取代） | 2026-08-24 |
+| [0003](0003-livetv-daily-tabs-and-doc-paste-rows.md) | LiveTV 改填每日分頁，週報輸出 Sheet / Doc 兩種貼上列 | Accepted | 2026-10-27 |

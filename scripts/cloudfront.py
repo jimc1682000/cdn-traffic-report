@@ -30,6 +30,15 @@ def build_metric_query(distribution_id: str, metric_name: str = 'BytesDownloaded
     ]
 
 
+def livetv_window(start_date: str, end_date: str) -> tuple[str, str]:
+    """LiveTV tabs are filled Mon-Sun: the Akamai Sun-Sat week shifted one day later."""
+
+    def shift(d: str) -> str:
+        return (datetime.strptime(d, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
+
+    return shift(start_date), shift(end_date)
+
+
 def convert_dates_to_utc(start_date: str, end_date: str) -> tuple[str, str]:
     """Convert UTC+8 date strings to UTC start/end times for CloudWatch API.
 

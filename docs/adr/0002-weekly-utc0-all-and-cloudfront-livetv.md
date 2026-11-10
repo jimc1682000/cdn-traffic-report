@@ -3,13 +3,15 @@
 ## Status
 **Accepted** - 2026-08-24
 
+Decision 2、3（LIVETV 週合計欄）已由 [ADR-0003](0003-livetv-daily-tabs-and-doc-paste-rows.md) 取代；Decision 1 仍有效。
+
 ## Context
 ### 問題描述
-週流量試算表填了近三個月後，新抓的數字偶爾對不上（例如 08/09 edge 100.10 vs 100.60）。排查時出現過幾種互相衝突的假設：
+週流量試算表填了近三個月後，新抓的數字偶爾對不上（例如 08/09 的 edge 跟表上差了約 0.5 TB）。排查時出現過幾種互相衝突的假設：
 
 - Akamai 日期窗該用 UTC+8（台灣日曆週）還是 UTC+0（腳本 URL `timezone=Greenwich`）
-- summary edge 該不該扣 home（`1000001`）與 test（`1000002`）
-- 表上的 LIVETV 被對到 Akamai `live` CP `1000003`（常為 0 / N/A），CloudFront BytesDownloaded 有抓進 JSON 卻沒進填表列
+- summary edge 該不該扣 home 與 test 兩個 CP
+- 表上的 LIVETV 被對到 Akamai `live` CP（常為 0 / N/A），CloudFront BytesDownloaded 有抓進 JSON 卻沒進填表列
 
 ### 業務影響
 - 時區或扣 CP 一旦改錯，新列會跟 5–6 月已填、且重抓仍剛好的列斷開
@@ -51,14 +53,14 @@ uv run python -m scripts.akamai_report --start 2026-08-09 --end 2026-08-15 \
 
 **為何不採用**：會跟已填歷史斷開。
 
-### 2. edge = ALL − home(`1000001`) − test(`1000002`)
-**優點**：08/02 UTC+8 的 105.70 對得上某一格手填
+### 2. edge = ALL − home − test
+**優點**：08/02 用 UTC+8 算剛好對得上某一格手填
 
-**缺點**：同一規則套不到 08/09 的 100.10；5–6 月剛好的列是未扣的 ALL
+**缺點**：同一規則套不到 08/09；5–6 月剛好的列是未扣的 ALL
 
 **為何不採用**：單週巧合，不是表的定義。
 
-### 3. 把 LIVETV 當成 Akamai `live`（`1000003`）
+### 3. 把 LIVETV 當成 Akamai `live` CP
 **優點**：欄位名都有 live
 
 **缺點**：該 CP 近數月多為 0 / N/A；真正要填的是 CloudFront bytes

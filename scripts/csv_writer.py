@@ -1,10 +1,11 @@
 """Flatten per-report results into one weekly CSV row matching the
-manual tracking spreadsheet.
+manual tracking spreadsheet, plus the paste-in blocks for the weekly Doc.
 
-Spreadsheet columns (left to right, header text matches the sheet for paste-in):
+Spreadsheet columns (sheet `weekly` A:M, header text matches the sheet for paste-in):
     年度 | CDN 每周流量TB | edge流量 | origin流量 | ID | TW | SG |
-    v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB |
-    LIVETV流量
+    v1流量 TB | v3流量 TB | Trailer/EPK | live流量GB | TVA流量GB | home流量GB
+
+Column N onwards in the sheet belongs to BI, so the row stops at M.
 
 Mapping rules:
 - 年度           : YYYY from start_date
@@ -12,13 +13,16 @@ Mapping rules:
 - edge流量       : summary.traffic.edge      (TB)
 - origin流量     : summary.traffic.origin    (TB)
 - ID/TW/SG       : geography.geography[...]  (TB) — blank when geo data absent
+                   or Akamai reports the window as incomplete (data_complete False)
 - v1流量 TB      : fixed 0 (legacy, no CP code yet)
 - v3流量 TB      : v3.traffic.edge           (TB)
 - Trailer/EPK    : trailer.traffic.edge      (configured unit)
 - live流量GB     : live.traffic.edge         (GB) — Akamai CP, not CloudFront
 - TVA流量GB      : tva.traffic.edge          (GB)
 - home流量GB     : home.traffic.edge         (GB)
-- LIVETV流量     : sum(cloudfront.daily_bytes) raw bytes — blank when CF absent
+
+CloudFront is not part of the weekly row: LiveTV goes into the sheet's `LiveTV`
+and `LiveTV monthy` tabs as one `date, raw bytes` row per UTC+8 day.
 
 Number formatting: integral floats are written without the trailing ".0"
 (e.g. 0.0 -> 0), while genuine decimals are preserved (e.g. 0.01 stays 0.01).
@@ -27,7 +31,7 @@ Number formatting: integral floats are written without the trailing ".0"
 from __future__ import annotations
 
 import csv
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # Column header constants — keep in sync with the tracking spreadsheet.
@@ -44,7 +48,6 @@ COL_TRAILER = 'Trailer/EPK'
 COL_LIVE = 'live流量GB'
 COL_TVA = 'TVA流量GB'
 COL_HOME = 'home流量GB'
-COL_LIVETV = 'LIVETV流量'
 
 SPREADSHEET_COLUMNS = [
     COL_YEAR,
@@ -60,13 +63,24 @@ SPREADSHEET_COLUMNS = [
     COL_LIVE,
     COL_TVA,
     COL_HOME,
-    COL_LIVETV,
+]
+
+# The weekly Doc table drops 年度 / origin / v1 and capitalises Home.
+DOC_COLUMNS = [
+    (COL_PERIOD, COL_PERIOD),
+    (COL_EDGE, COL_EDGE),
+    (COL_ID, COL_ID),
+    (COL_TW, COL_TW),
+    (COL_SG, COL_SG),
+    (COL_V3, COL_V3),
+    (COL_TRAILER, COL_TRAILER),
+    (COL_LIVE, COL_LIVE),
+    (COL_TVA, COL_TVA),
+    ('Home流量GB', COL_HOME),
 ]
 
 # Geography columns are left blank (not 0) when no geo data is available.
 GEO_COLUMNS = (COL_ID, COL_TW, COL_SG)
-# CloudFront LIVETV is blank when the cloudfront report was not in the run.
-BLANK_WHEN_ABSENT = (*GEO_COLUMNS, COL_LIVETV)
 
 _EDGE_BY_TYPE = {
     'summary': (COL_EDGE, COL_ORIGIN),
@@ -101,12 +115,15 @@ def _fmt_num(v):
 def flatten_results(results: list[dict]) -> dict:
     """Build a single row dict keyed by SPREADSHEET_COLUMNS from per-report results."""
     row = dict.fromkeys(SPREADSHEET_COLUMNS, 0)
-    # Geo / LIVETV stay blank unless that report actually ran.
-    for col in BLANK_WHEN_ABSENT:
+    # Geo stays blank unless that report actually ran.
+    for col in GEO_COLUMNS:
         row[col] = ''
 
     start_date = end_date = None
     for r in results:
+        # CloudFront uses its own (shifted) LiveTV window, not the Akamai week.
+        if r.get('type') == 'cloudfront':
+            continue
         dr = r.get('date_range') or {}
         if dr.get('start'):
             start_date = dr['start']
@@ -129,17 +146,63 @@ def flatten_results(results: list[dict]) -> dict:
             if origin_col and 'origin' in traffic:
                 row[origin_col] = traffic['origin']
 
-        if rtype == 'geography':
+        # Partial geo numbers look plausible but undercount, so leave them blank.
+        if rtype == 'geography' and r.get('data_complete') is not False:
             geo = r.get('geography') or {}
             for country in GEO_COLUMNS:
                 if country in geo:
                     row[country] = geo[country]
 
-        if rtype == 'cloudfront':
-            daily = r.get('daily_bytes') or {}
-            row[COL_LIVETV] = sum(daily.values())
-
     return {k: _fmt_num(v) for k, v in row.items()}
+
+
+def doc_row(row: dict) -> list:
+    """Reorder a flattened row into the weekly Doc table's columns."""
+    return [row[col] for _, col in DOC_COLUMNS]
+
+
+def livetv_rows(results: list[dict]) -> list[tuple[str, int]]:
+    """CloudFront daily bytes as ("YYYY-MM-DD", bytes) rows for the LiveTV tabs.
+
+    daily_bytes is keyed by "MM/DD", so the year comes from the cloudfront
+    date_range (walking the range keeps a Dec -> Jan window correct).
+    """
+    rows = []
+    for r in results:
+        if r.get('type') != 'cloudfront':
+            continue
+        daily = r.get('daily_bytes') or {}
+        day = _parse_date(r['date_range']['start'])
+        end = _parse_date(r['date_range']['end'])
+        while day <= end:
+            key = f'{day.month:02d}/{day.day:02d}'
+            if key in daily:
+                rows.append((day.isoformat(), daily[key]))
+            day += timedelta(days=1)
+    return rows
+
+
+def format_paste_blocks(results: list[dict]) -> str:
+    """Tab-separated blocks to paste into the sheet tabs and the weekly Doc."""
+    row = flatten_results(results)
+
+    def tsv(values) -> str:
+        return '\t'.join(str(v) for v in values)
+
+    lines = [
+        '# Sheet weekly A:M（插在第 2 列）',
+        tsv(SPREADSHEET_COLUMNS),
+        tsv(row[col] for col in SPREADSHEET_COLUMNS),
+        '',
+        '# Doc 週表（插在表頭下方）',
+        tsv(name for name, _ in DOC_COLUMNS),
+        tsv(doc_row(row)),
+    ]
+    daily = livetv_rows(results)
+    if daily:
+        lines += ['', '# Sheet LiveTV / LiveTV monthy A:B（C、D 欄是公式，往下延伸）']
+        lines += [tsv(d) for d in daily]
+    return '\n'.join(lines)
 
 
 def _migrate_legacy_header(csv_path: Path) -> None:
@@ -156,9 +219,13 @@ def _migrate_legacy_header(csv_path: Path) -> None:
     if not rows:
         return
     header = rows[0]
-    # Only migrate a real header row (both old/new start with 年度) that differs.
-    if header and header[0] == SPREADSHEET_COLUMNS[0] and header != SPREADSHEET_COLUMNS:
-        rows[0] = SPREADSHEET_COLUMNS
+    # Only migrate a real header row (both old/new start with 年度). Rewrite when
+    # the header differs or a data row still carries the retired trailing
+    # LIVETV流量 column, which would otherwise spill into the sheet's BI column.
+    width = len(SPREADSHEET_COLUMNS)
+    stale = header != SPREADSHEET_COLUMNS or any(len(r) > width for r in rows[1:])
+    if header and header[0] == SPREADSHEET_COLUMNS[0] and stale:
+        rows = [SPREADSHEET_COLUMNS] + [r[:width] for r in rows[1:]]
         with open(csv_path, 'w', encoding='utf-8', newline='') as f:
             csv.writer(f).writerows(rows)
 
