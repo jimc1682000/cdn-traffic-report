@@ -27,6 +27,22 @@ def exec_ab(*args: str) -> str:
     return result.stdout.strip()
 
 
+def launch_ab(*args: str) -> str:
+    """Run a launching agent-browser command (e.g. `--state ... open URL`).
+
+    After `close` on a session with no running daemon, agent-browser 0.34
+    fails the first launch with "Failed to connect: No such file or
+    directory"; a second attempt (without another close) succeeds. Other
+    errors are raised unchanged.
+    """
+    try:
+        return exec_ab(*args)
+    except subprocess.CalledProcessError as e:
+        if 'Failed to connect' not in (e.stderr or ''):
+            raise
+        return exec_ab(*args)
+
+
 def run_ab(*args: str) -> str:
     """Run agent-browser with global browser options, return stdout."""
     return exec_ab(*_global_opts, *args)
@@ -79,6 +95,10 @@ def init_browser(state_file: str, url: str, headed: bool = False) -> None:  # pr
 
     Always closes any existing daemon first, then launches fresh with --state
     to ensure cookies from the state file are loaded.
+
+    Launch options go on the `open` call only: agent-browser 0.34 treats
+    --state on a later command as a relaunch and resets the page to
+    about:blank, so they must not stay in the global options.
     """
     global _global_opts
 
@@ -87,10 +107,10 @@ def init_browser(state_file: str, url: str, headed: bool = False) -> None:  # pr
     with contextlib.suppress(subprocess.CalledProcessError):
         run_ab('close')
 
-    _global_opts = ['--state', state_file]
+    launch = ['--state', state_file]
     if headed:
-        _global_opts.append('--headed')
-    run_ab('open', url)
+        launch.append('--headed')
+    launch_ab(*launch, 'open', url)
 
 
 REPORT_HASH = {

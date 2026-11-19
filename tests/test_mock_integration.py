@@ -12,6 +12,7 @@ import pytest
 
 from scripts.browser_helpers import ab_eval, run_ab
 from scripts.calendar_nav import get_displayed_months
+from scripts.cpcode_select import search_and_select_cp_code
 from scripts.data_extract import bytes_to_tb, extract_data_ends, extract_geography_table, extract_traffic_cards
 
 pytestmark = pytest.mark.integration
@@ -137,11 +138,7 @@ class TestMockCpCodes:
 
     def test_search_and_select(self, mock_browser):
         self._open_filter()
-        # Fill search with a code, then click it via scoped selector
-        run_ab('fill', "input[placeholder='CP codes']", '100001')
-        time.sleep(1)
-        run_ab('click', '#cpcodes-filter-editor >> text=(100001)')
-        time.sleep(0.5)
+        search_and_select_cp_code('100001')
         state = json.loads(ab_eval('window.__mockState'))
         assert '100001' in state['selectedCpCodes']
 
@@ -155,9 +152,8 @@ class TestMockFilterFlow:
         ab_eval("document.querySelector('app-date-range-preview')?.click()")
         # Wait for CP codes editor to appear
         run_ab('wait', '#cpcodes-filter-editor')
-        # Click Apply
-        run_ab('scrollintoview', "button:has-text('Apply')")
-        run_ab('click', "button:has-text('Apply')")
+        # Click Apply (same locator as contract_check)
+        run_ab('find', 'role', 'button', 'click', '--name', 'Apply', '--exact')
         time.sleep(0.5)
         state = json.loads(ab_eval('window.__mockState'))
         assert state['appliedCount'] == 1

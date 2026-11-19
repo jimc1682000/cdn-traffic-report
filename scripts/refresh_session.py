@@ -31,7 +31,7 @@ import subprocess
 import sys
 import time
 
-from scripts.browser_helpers import exec_ab
+from scripts.browser_helpers import exec_ab, launch_ab
 from scripts.config import AKAMAI_URL, ONEPASSWORD_CONFIG, STATE_FILE
 
 # Waits (seconds) between login steps and for the manual-login poll loop.
@@ -235,7 +235,7 @@ def refresh_session(force: bool = False, manual: bool = False) -> bool:  # pragm
     time.sleep(1)
 
     # Open a fresh headed daemon (--state may restore cookies if still valid).
-    exec_ab('--state', STATE_FILE, '--headed', 'open', AKAMAI_URL)
+    launch_ab('--state', STATE_FILE, '--headed', 'open', AKAMAI_URL)
     time.sleep(WAIT_PAGE)
 
     if not force and _check_logged_in():

@@ -130,8 +130,8 @@ def run_checks(headed: bool) -> list[dict]:  # pragma: no cover
             time.sleep(1)
 
             # Click Apply to trigger data load
-            run_ab('scrollintoview', "button:has-text('Apply')")
-            run_ab('click', "button:has-text('Apply')")
+            # agent-browser 0.34 has no :has-text(); the role locator scrolls and clicks.
+            run_ab('find', 'role', 'button', 'click', '--name', 'Apply', '--exact')
             time.sleep(WAIT_REPORT_LOAD)
 
             # Poll for data

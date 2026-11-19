@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Skill / README / CLAUDE.md: fill-in output must include CloudFront; do not map LIVETV to Akamai `live`
 - Full runs fetch CloudFront for the Akamai week shifted one day later (Mon–Sun)
 
+### Fixed
+- agent-browser 0.34 compatibility: `init_browser` passes `--state` / `--headed` only on the launch `open` (on later commands they reset the page to `about:blank`) and the launch `open` (`init_browser` and `refresh_session`, via `launch_ab`) retries once on the `Failed to connect` error 0.34 returns for the first launch after `close`; `contract_check` and `search_and_select_cp_code` use `find` locators instead of `:has-text()` / `>> text=`
+- Integration tests run again: `empty_state.json` has the `cookies` / `origins` fields 0.34 requires, and the mock browser uses its own session so a live Akamai session is not closed
+
 ### Removed
 - `weekly.csv` column `LIVETV流量`: the sheet's column N is BI data, so the row now stops at `home流量GB`
 - Legacy `.github/workflows/auto-merge.yml` (GITHUB_TOKEN cannot approve PRs; failed check blocked repo-policy automerge)

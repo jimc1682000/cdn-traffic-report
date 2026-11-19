@@ -45,8 +45,9 @@ def select_all() -> None:
 def search_and_select_cp_code(code: str, retries: int = 3) -> None:
     """Search for a CP code and select its checkbox.
 
-    Uses scoped selector to click within CP codes editor only,
-    avoiding ambiguity with the main data table.
+    agent-browser 0.34 dropped Playwright-style `>> text=` selectors, so the
+    click uses a text locator. "(code)" in parentheses only appears in the
+    CP codes list entries ("Name (123456)"), not in the report data table.
     """
     scroll_to_cp_codes()
 
@@ -55,9 +56,8 @@ def search_and_select_cp_code(code: str, retries: int = 3) -> None:
         run_ab('fill', "input[placeholder='CP codes']", code)
         time.sleep(2)
 
-        # Click within CP codes editor (scoped to avoid matching data table)
         try:
-            run_ab('click', f'#{CP_EDITOR_ID} >> text=({code})')
+            run_ab('find', 'text', f'({code})', 'click')
             break
         except Exception:
             if attempt < retries - 1:

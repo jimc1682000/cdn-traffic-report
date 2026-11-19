@@ -59,3 +59,21 @@ def test_save_state_missing_data_key(mocker, tmp_path):
     state = json.loads((tmp_path / 'state.json').read_text())
     assert state['cookies'] == []
     assert state['origins'][0]['localStorage'] == []
+
+
+# ---------------------------------------------------------------------------
+# refresh_session — launch goes through launch_ab (connect-error retry)
+# ---------------------------------------------------------------------------
+def test_refresh_session_launches_via_launch_ab(mocker):
+    mocker.patch('scripts.refresh_session._close_browser')
+    mocker.patch('scripts.refresh_session.time.sleep')
+    mocker.patch('scripts.refresh_session._check_logged_in', return_value=True)
+    mocker.patch('scripts.refresh_session._save_state')
+    launch = mocker.patch('scripts.refresh_session.launch_ab')
+    from scripts.refresh_session import refresh_session
+
+    assert refresh_session() is True
+    launch.assert_called_once()
+    args = launch.call_args.args
+    assert args[0] == '--state'
+    assert args[-2] == 'open'

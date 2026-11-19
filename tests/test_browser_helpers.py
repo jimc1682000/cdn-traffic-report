@@ -93,3 +93,33 @@ def test_ab_eval_delegates_to_run_ab(mocker):
     from scripts.browser_helpers import ab_eval
 
     assert ab_eval('1+1') == '42'
+
+
+# ---------------------------------------------------------------------------
+# launch_ab
+# ---------------------------------------------------------------------------
+CONNECT_ERR = '✗ Could not configure browser: Failed to connect: No such file or directory (os error 2)'
+
+
+def test_launch_ab_retries_once_on_connect_error(mocker):
+    """First launch after close on an idle session fails to connect; retry once."""
+    exec_mock = mocker.patch(
+        'scripts.browser_helpers.exec_ab',
+        side_effect=[subprocess.CalledProcessError(1, 'ab', stderr=CONNECT_ERR), 'ok'],
+    )
+    from scripts.browser_helpers import launch_ab
+
+    assert launch_ab('--state', 's.json', 'open', 'https://example.test') == 'ok'
+    assert exec_mock.call_count == 2
+
+
+def test_launch_ab_raises_other_errors_without_retry(mocker):
+    exec_mock = mocker.patch(
+        'scripts.browser_helpers.exec_ab',
+        side_effect=subprocess.CalledProcessError(1, 'ab', stderr='invalid state file'),
+    )
+    from scripts.browser_helpers import launch_ab
+
+    with pytest.raises(subprocess.CalledProcessError):
+        launch_ab('--state', 's.json', 'open', 'https://example.test')
+    assert exec_mock.call_count == 1

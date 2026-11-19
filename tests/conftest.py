@@ -12,6 +12,7 @@ import pytest
 GOLDEN_DIR = Path(__file__).parent / 'golden'
 MOCK_SITE_DIR = Path(__file__).parent / 'mock_site'
 EMPTY_STATE = MOCK_SITE_DIR / 'empty_state.json'
+MOCK_SESSION = 'cdn-report-mock'
 
 
 def pytest_configure(config):
@@ -30,10 +31,16 @@ def mock_server():
 
 
 @pytest.fixture
-def mock_browser(mock_server):
-    """Per-test browser fixture: opens mock site, closes after test."""
+def mock_browser(mock_server, monkeypatch):
+    """Per-test browser fixture: opens mock site, closes after test.
+
+    Uses its own agent-browser session so a live Akamai session (kept open by
+    refresh_session for --reuse-browser) is never closed by the tests.
+    """
+    from scripts import browser_helpers
     from scripts.browser_helpers import close_browser, init_browser
 
+    monkeypatch.setattr(browser_helpers, 'SESSION', MOCK_SESSION)
     init_browser(state_file=str(EMPTY_STATE), url=mock_server, headed=False)
     time.sleep(2)
     yield mock_server
