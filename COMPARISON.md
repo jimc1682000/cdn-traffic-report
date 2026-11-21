@@ -29,8 +29,8 @@ cdn-traffic-report 不只是一組腳本，它是一個 **Claude Code Plugin**�
 cdn-traffic-report/
 ├── .claude-plugin/plugin.json    ← Plugin 清單（name: "cdn"）
 ├── skills/cdn-report/SKILL.md    ← Skill 定義（指令、參數、輸出格式）
-├── AGENTS.md                     ← Agent 能力文件
-├── CLAUDE.md                     ← 專案指引（含 E2E 測試協議）
+├── AGENTS.md                     ← 專案指引（含 E2E 測試協議）與 Agent 能力文件
+├── CLAUDE.md                     ← 只含 @AGENTS.md
 └── scripts/                      ← 底層實作
 ```
 
